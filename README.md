@@ -34,7 +34,7 @@ docker run --rm -p 3000:3000 -e PORT=3000 klement-website
 ## Wat werkt en wat nog moet worden gekoppeld
 
 - De offertehulp valideert de gegevens, toont een overzicht en opent een ingevulde e-mail. De bezoeker verstuurt die e-mail zelf. Automatische verzending vanaf de website is nog niet aangesloten.
-- Het huidige telefoonnummer en e-mailadres komen uit de oorspronkelijke website. Pas ze op alle plaatsen aan zodra de nieuwe contactgegevens bekend zijn.
+- Contactgegevens: +31 6 4368 3995 en info@schildersbedrijfklement.nl. De offertehulp richt de e-mail aan dit adres.
 - De Google-score en citaten zijn een geverifieerde momentopname van 24 oktober 2026, met een link naar het juiste Google-profiel. Ze worden niet automatisch bijgewerkt.
 - De kleurtool gebruikt 24 gepubliceerde RAL-schermwaarden en expliciete HEX/RGB-waarden. Onbekende RAL-, NCS- en winkelcodes worden niet gegokt. Neutraal toont de digitale codekleur zonder lichtfilter; de andere lichtstanden zijn sfeerbeelden. Een schermkleur is geen garantie voor de fysieke verf.
 - Er zijn geen statistiek- of advertentiecookies, externe JavaScript-CDN's of verplichte koppelingen met ChatGPT in de websitecode. Toegangsinstellingen van een eerdere voorbeeldomgeving worden niet meegenomen naar Railway.

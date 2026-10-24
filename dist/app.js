@@ -200,9 +200,9 @@ form.addEventListener('submit', event => {
   if (currentStep < 3) { showStep(currentStep + 1); return; }
   updateSummary();
   const subject = 'Vrijblijvende offerteaanvraag — ' + value('place');
-  const href = 'mailto:klussenbedrijfdegeneraal@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(enquiryText);
+  const href = 'mailto:info@schildersbedrijfklement.nl?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(enquiryText);
   window.location.href = href;
-  $('#send-status').textContent = 'Uw e-mailprogramma wordt geopend. Klik daar op verzenden om uw aanvraag te versturen. Opent er niets? Kopieer uw aanvraag en mail deze zelf naar klussenbedrijfdegeneraal@gmail.com, of bel 06 4368 3995.';
+  $('#send-status').textContent = 'Uw e-mailprogramma wordt geopend. Klik daar op verzenden om uw aanvraag te versturen. Opent er niets? Kopieer uw aanvraag en mail deze zelf naar info@schildersbedrijfklement.nl, of bel +31 6 4368 3995.';
   $('#send-status').hidden = false;
 });
 $('#previous').addEventListener('click', () => showStep(Math.max(0, currentStep - 1)));
@@ -219,7 +219,7 @@ $('.copy-request').addEventListener('click', async () => {
   const status = $('#send-status');
   try {
     await navigator.clipboard.writeText(enquiryText);
-    status.textContent = 'Aanvraag gekopieerd. Plak deze in een e-mail aan klussenbedrijfdegeneraal@gmail.com en verstuur hem vanuit uw eigen e-mailprogramma.';
+    status.textContent = 'Aanvraag gekopieerd. Plak deze in een e-mail aan info@schildersbedrijfklement.nl en verstuur hem vanuit uw eigen e-mailprogramma.';
   } catch {
     const text = document.createElement('textarea');
     text.value = enquiryText;

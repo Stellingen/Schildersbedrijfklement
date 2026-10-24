@@ -240,3 +240,22 @@ blockquote>p{font-size:19px}
 .dialog-content>p:not(.eyebrow),.dialog-content li{font-size:16px}
 }
 @media(max-width:600px){.services-grid{grid-template-columns:1fr}.footer-main{grid-template-columns:1fr}.footer-main>div:first-child{grid-column:auto}}
+
+/* Phone cards must override the earlier tablet three-column rule. */
+@media(max-width:720px){
+ .quick-start .quick-inner{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:stretch}
+ .quick-start .quick-inner>div{grid-column:1 / -1;display:block;min-width:0;margin-bottom:6px}
+ .quick-start .quick-choice{display:grid;grid-template-columns:28px minmax(0,1fr) 20px;align-items:center;gap:14px;width:100%;min-width:0;min-height:100px;padding:18px;border:1px solid #cddde8;border-radius:10px;background:#fff;text-align:left}
+ .quick-start .quick-choice>span{display:block;min-width:0;font-size:18px;line-height:1.4;white-space:normal;word-break:normal;overflow-wrap:break-word}
+ .quick-start .quick-choice small{display:block;max-width:none;margin-top:4px;font-size:15px;font-weight:400;line-height:1.55;white-space:normal;word-break:normal}
+ .quick-start .quick-choice>.icon:first-child{width:25px;height:25px;margin:0;align-self:center}
+ .quick-start .quick-choice>.icon:last-child{width:19px;height:19px;margin:0;justify-self:end;align-self:center}
+ .quick-start .quick-inner>div>.eyebrow{font-size:12px;line-height:1.6;margin-bottom:7px}
+ .quick-start .quick-inner>div>strong{font-size:20px;line-height:1.45}
+ .contact-phone{font-variant-numeric:tabular-nums}
+}
+@media(max-width:370px){
+ .quick-start .quick-choice{grid-template-columns:25px minmax(0,1fr) 18px;gap:12px;padding:16px}
+ .quick-start .quick-choice>span{font-size:17px}
+ .quick-start .quick-choice small{font-size:15px}
+}
