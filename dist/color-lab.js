@@ -1,21 +1,20 @@
 import { paintColors } from './paint-data.js';
 import { resolvePaint, paintFromRgb, rgbChannels } from './paint-resolver.js';
+import { studioScenes, studioTarget, studioChoice } from './studio-state.js?v=studio-20261025';
 
 const palette = document.querySelector('#paint-palette');
 const input = document.querySelector('#paint-code');
 const message = document.querySelector('#paint-message');
 const useColor = document.querySelector('#use-color');
-const state = { paint: paintColors[0], wall: 'all', light: 'neutral' };
+const savedPaints = { walls: paintColors.find(p => p.code === 'RAL 6021'), frames: paintColors.find(p => p.code === 'RAL 7016'), ceiling: paintColors[0] };
+const state = { paint: savedPaints.walls, colors: Object.fromEntries(Object.entries(savedPaints).map(([key, paint]) => [key, paint.hex])), scene: 'walls', surface: 'walls', wall: 'all', light: 'day', finish: 'satin', compare: 50 };
 let room = null, codeMode = 'ral';
 const modes = ['ral', 'hex', 'rgb'];
 const rgbInputs = ['#rgb-red', '#rgb-green', '#rgb-blue'].map(selector => document.querySelector(selector));
 
 function paintLabel(paint) { return paint.code + ' · ' + paint.name; }
 function announceColor() {
-  const { paint } = state;
-  document.dispatchEvent(new CustomEvent('klement-color-change', { detail: {
-    code: paint.code, name: paintLabel(paint), value: paint.hex
-  }}));
+  document.dispatchEvent(new CustomEvent('klement-color-change', { detail: studioChoice(state) }));
 }
 function populateFields() {
   input.value = state.paint.source ? state.paint.code : '';
@@ -45,6 +44,7 @@ function switchMode(mode, moveFocus = false) {
 }
 function applyPaint(paint) {
   state.paint = paint;
+  const target = studioTarget(state); savedPaints[target] = paint; state.colors[target] = paint.hex;
   useColor.disabled = false;
   document.querySelectorAll('#paint-search [aria-invalid]').forEach(field => field.removeAttribute('aria-invalid'));
   document.querySelector('#color-name').textContent = paintLabel(paint);
@@ -58,7 +58,7 @@ function applyPaint(paint) {
   if (paint.source) source.href = paint.source;
   populateFields();
   message.classList.remove('error');
-  message.textContent = paint.source ? 'Gekozen: ' + paint.code + '. Neutraal toont de bijbehorende digitale schermkleur.' : 'Digitale kleur toegepast. Dit is een RGB/HEX-waarde, geen verfmengrecept.';
+  message.textContent = paint.source ? 'Gekozen: ' + paint.code + '. Kies Codekleur om de digitale schermwaarde zonder lichtfilter te bekijken.' : 'Digitale kleur toegepast. Dit is een RGB/HEX-waarde, geen verfmengrecept.';
   announceColor(); room?.update(state);
 }
 
@@ -110,25 +110,72 @@ document.querySelector('#custom-paint').addEventListener('input', event => {
   const paint = resolvePaint(event.target.value, 'hex');
   if (paint) { switchMode('hex'); applyPaint(paint); }
 });
-document.querySelectorAll('[data-wall], [data-light]').forEach(button => button.addEventListener('click', () => {
-  const setting = button.dataset.wall ? 'wall' : 'light'; state[setting] = button.dataset[setting];
-  document.querySelectorAll('[data-' + setting + ']').forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+function updateStudioLabels() {
+  document.querySelector('#studio-view-title').textContent = studioScenes[state.scene].title;
+  document.querySelector('#studio-description').textContent = studioScenes[state.scene].description;
+  document.querySelector('#wall-settings').hidden = studioTarget(state) !== 'walls';
+  document.querySelector('#plaster-settings').hidden = state.scene !== 'plaster';
+  document.querySelector('#finish-settings').hidden = state.scene !== 'frames';
+  document.querySelector('#use-color').textContent = 'Dit idee meenemen ↗';
   document.querySelector('#light-mode-note').textContent = state.light === 'neutral'
-    ? 'Neutraal: de digitale codekleur op de wanden, zonder lichtfilter.'
-    : 'Sfeerweergave: ' + (state.light === 'day' ? 'daglicht' : 'warm licht') + ' verandert hoe een kleur oogt. Dit voorspelt de verlichting bij u thuis niet.';
-  room?.update(state);
+    ? 'Codekleur toont de digitale schermwaarde zonder lichtfilter. Structuur en glans van de nieuwe afwerking zijn in deze stand niet zichtbaar.'
+    : 'Sfeerweergave: ' + (state.light === 'day' ? 'daglicht' : 'warm licht') + '. Licht, structuur en glans zijn illustratief en voorspellen de situatie bij u thuis niet.';
+}
+function changeTarget(setting, value) {
+  const oldTarget = studioTarget(state);
+  savedPaints[oldTarget] = state.paint;
+  state[setting] = value;
+  document.querySelectorAll('[data-' + setting + ']').forEach(other => other.setAttribute('aria-pressed', String(other.dataset[setting] === value)));
+  if (setting === 'scene' || setting === 'surface') {
+    applyPaint(savedPaints[studioTarget(state)]);
+  } else { announceColor(); room?.update(state); }
+  updateStudioLabels();
+}
+document.querySelectorAll('[data-wall], [data-light], [data-scene], [data-surface], [data-finish]').forEach(button => button.addEventListener('click', () => {
+  const setting = ['wall', 'light', 'scene', 'surface', 'finish'].find(key => key in button.dataset);
+  changeTarget(setting, button.dataset[setting]);
 }));
+const compareRange = document.querySelector('#compare-range');
+function setComparison(value) {
+  state.compare = Math.max(0, Math.min(100, Number(value)));
+  compareRange.value = state.compare;
+  const rounded = Math.round(state.compare);
+  compareRange.setAttribute('aria-valuetext', rounded + ' procent vernieuwd');
+  document.querySelector('#compare-value').textContent = rounded + '% vernieuwd';
+  const divider = document.querySelector('#comparison-divider');
+  divider.style.left = (100 - state.compare) + '%';
+  divider.hidden = state.compare === 0 || state.compare === 100;
+  document.querySelector('#before-badge').style.visibility = state.compare === 100 ? 'hidden' : 'visible';
+  document.querySelector('#after-badge').style.visibility = state.compare === 0 ? 'hidden' : 'visible';
+  document.querySelectorAll('[data-compare]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.compare) === state.compare)));
+  room?.update(state);
+}
+compareRange.addEventListener('input', () => setComparison(compareRange.value));
+document.querySelectorAll('[data-compare]').forEach(button => button.addEventListener('click', () => setComparison(button.dataset.compare)));
+const divider = document.querySelector('#comparison-divider');
+divider.addEventListener('pointerdown', event => {
+  event.preventDefault(); divider.setPointerCapture(event.pointerId);
+  const move = event => {
+    const bounds = document.querySelector('#room-viewport').getBoundingClientRect();
+    // Keep the handle in reach; the labelled buttons also allow full before/after.
+    setComparison(Math.max(1, Math.min(99, 100 - (event.clientX - bounds.left) / bounds.width * 100)));
+  };
+  divider.addEventListener('pointermove', move);
+  const stop = () => { divider.removeEventListener('pointermove', move); divider.removeEventListener('pointerup', stop); divider.removeEventListener('pointercancel', stop); };
+  divider.addEventListener('pointerup', stop); divider.addEventListener('pointercancel', stop);
+});
 function unavailable() {
   document.querySelector('#room-loading').hidden = true; document.querySelector('#room-fallback').hidden = false;
   document.querySelector('.room-tools').hidden = true; document.querySelector('#room-drag-hint').hidden = true;
   document.querySelector('#room-reset').disabled = true;
-  document.querySelectorAll('[data-wall], [data-light]').forEach(button => { button.disabled = true; });
+  document.querySelectorAll('[data-wall], [data-light], [data-finish], [data-compare], #compare-range').forEach(button => { button.disabled = true; });
+  document.querySelector('.comparison-badges').hidden = true; document.querySelector('#comparison-divider').hidden = true;
 }
 let started = false;
 async function startRoom() {
   if (started) return; started = true;
   try {
-    const { createColorRoom } = await import('./room-viewer.js');
+    const { createColorRoom } = await import('./room-viewer.js?v=studio-20261025');
     room = createColorRoom(document.querySelector('#room-viewport'), state);
     document.querySelector('#room-loading').hidden = true;
   } catch (error) { console.warn('3D-kamer niet beschikbaar:', error.message); unavailable(); }
@@ -143,4 +190,4 @@ document.querySelector('#room-left').addEventListener('click', () => room?.orbit
 document.querySelector('#room-right').addEventListener('click', () => room?.orbit(0.15));
 document.querySelector('#room-zoom-in').addEventListener('click', () => room?.zoom(0.88));
 document.querySelector('#room-zoom-out').addEventListener('click', () => room?.zoom(1.13));
-switchMode('ral'); applyPaint(state.paint);
+switchMode('ral'); applyPaint(state.paint); updateStudioLabels(); setComparison(50);

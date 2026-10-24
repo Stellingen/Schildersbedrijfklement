@@ -56,19 +56,27 @@ docker run --rm -p 3000:3000 -e PORT=3000 klement-website
 
 De bedrijfscontent en afbeeldingen zijn geen vrij herbruikbare template. De meegeleverde externe software en lettertypen behouden hun eigen licenties.
 
-## Vorige vormgeving terugzetten
+## 3D-afwerkstudio en ontwerpvariant
 
-De volledige versie vóór deze designtest is bewaard op GitHub-branch `backup/voor-design-test-20261024`.
+De variant van 25 oktober 2026 gebruikt `dist/studio.css` boven op de bestaande basisstijl. Het blauwe Klement-logo, projectfoto's, Google-verwijzingen, contactgegevens en offertehulp zijn behouden.
 
-Om alleen de eerdere vormgeving te herstellen en de verwijderde bovenbalk weg te laten:
+De lokaal gerenderde 3D-studio heeft drie studies: wanden schilderen, wanden/plafond stucen en kozijnen schilderen. Een gesynchroniseerde voor/na-vergelijking gebruikt twee materiaalstanden van dezelfde 3D-scène en camera. De schuif, directe scheidingslijn, cameraknoppen en toetsenbordbediening werken zonder externe API. Elke ondergrond bewaart tijdens dit paginabezoek zijn eigen kleur. De knop ‘Dit idee meenemen’ voegt het gekozen onderdeel, de kleurcode en bij kozijnen de glansvoorkeur toe aan de offertehulp en selecteert de bijpassende dienst.
+
+De ontworpen ruwe/verweerde ondergrond en de vernieuwde versie zijn illustratieve voorbeelden, geen klantfoto's of een simulatie van bouwkundige reparaties. Daglicht, warm licht, structuur en glans geven een indruk. Codekleur toont de gekozen digitale kleurwaarde zonder licht- of glanseffect. De tool voorspelt geen fysieke verf, stucdikte, herstelbaarheid of eindresultaat in een echte woning. Bij ontbrekende WebGL-ondersteuning blijft de kleurkeuze bruikbaar.
+
+## Huidige back-up terugzetten
+
+De volledige, goedgekeurde versie direct vóór deze nieuwe variant is bewaard op GitHub-branch `backup/voor-futuristisch-20261025`, commit `798a4e7f197a2cb8050250c80a33cd1dc6bf4513`. Deze bevat de bijgewerkte contactgegevens, herstelde leesbaarheid en gecorrigeerde mobiele keuzekaarten.
+
+Selecteer die branch in Railway om de vorige versie te hosten, of herstel hem op main met een nieuwe commit:
 
 ```sh
 git fetch origin
 git switch main
-git restore --source origin/backup/voor-design-test-20261024 -- dist/style.css
-git add dist/style.css
-git commit -m "Herstel vorige vormgeving"
+git restore --source origin/backup/voor-futuristisch-20261025 -- .
+git add -A
+git commit -m "Herstel website van voor futuristische variant"
 git push origin main
 ```
 
-Om de volledige vorige versie te bekijken of te hosten, kunt u de backup-branch selecteren als bron. Dat herstelt ook de eerdere bovenbalk.
+De oudere proefversie blijft daarnaast beschikbaar op `backup/voor-design-test-20261024`.

@@ -80,6 +80,7 @@ function renderColor() {
 }
 $('#use-color').addEventListener('click', () => {
   enquiryColor = { ...selectedColor };
+  if (selectedColor.service) selectService(selectedColor.service);
   renderColor();
   showStep(0, false);
   $('#offerte').scrollIntoView({ behavior: reducedMotion() ? 'instant' : 'smooth' });

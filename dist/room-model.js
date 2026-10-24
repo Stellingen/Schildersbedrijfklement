@@ -9,6 +9,12 @@ export function createRoomModel(textures = {}) {
   const material = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: .85, ...Object.fromEntries(Object.entries(extra).filter(([, value]) => value !== undefined)) });
   const white = material('#f4f2eb');
   const trim = material('#f1f0e9', { roughness: .4 });
+  const paintFrame = material('#363E42', { roughness: .28, metalness: .04 });
+  const paintCeiling = material('#F0EFE5', { roughness: .98 });
+  const frameMeshes = [], curtains = [];
+  const wornWall = material('#c5b9a1', { map: textures.wornPlaster, bumpMap: textures.wornPlaster, bumpScale: .06, roughness: 1 });
+  const wornCeiling = material('#c7c4ba', { map: textures.wornPlaster, bumpMap: textures.wornPlaster, bumpScale: .075, roughness: 1 });
+  const wornFrame = material('#a69a7c', { map: textures.wornWood, bumpMap: textures.wornWood, bumpScale: .025, roughness: .95 });
   const paintBack = material('#F0EFE5', { roughness: .96, bumpMap: textures.plaster, bumpScale: .012 });
   const paintSide = material('#F0EFE5', { roughness: .96, bumpMap: textures.plaster, bumpScale: .012 });
   const wood = material('#a5835c', { map: textures.wood, roughness: .66 });
@@ -62,18 +68,21 @@ export function createRoomModel(textures = {}) {
   const view = new THREE.MeshBasicMaterial({ map: textures.garden || null, color: '#e6eddb' });
   box([.035, 1.75, 2.0], view, [-2.981, 1.65, .35]);
   const frameX = -2.91;
-  for (const z of [-.71, 1.41]) box([.11, 1.94, .095], trim, [frameX, 1.65, z]);
-  for (const y of [.70, 2.6]) box([.11, .095, 2.2], trim, [frameX, y, .35]);
-  box([.11, 1.84, .06], trim, [frameX + .01, 1.65, .35]);
-  box([.12, .06, 2.1], trim, [frameX + .01, 1.6, .35]);
-  box([.27, .07, 2.3], trim, [-2.85, .68, .35]);
+  const frameBox = (size, position) => { const m = box(size, paintFrame, position, .008); frameMeshes.push(m); return m; };
+  for (const z of [-.71, 1.41]) frameBox([.11, 1.94, .095], [frameX, 1.65, z]);
+  for (const y of [.70, 2.6]) frameBox([.11, .095, 2.2], [frameX, y, .35]);
+  frameBox([.11, 1.84, .06], [frameX + .01, 1.65, .35]);
+  frameBox([.12, .06, 2.1], [frameX + .01, 1.6, .35]);
+  frameBox([.27, .07, 2.3], [-2.85, .68, .35]);
+  frameBox([.045, .26, .035], [-2.835, 1.38, .48]);
+  cylinder(.025, .025, .055, darkMetal, [-2.80, 1.41, .48], [0, 0, Math.PI / 2]);
   for (const z of [-.95, 1.66]) {
     const geometry = new THREE.PlaneGeometry(.55, 2.66, 20, 1);
     const positions = geometry.attributes.position;
     for (let i = 0; i < positions.count; i++) positions.setZ(i, Math.sin(positions.getX(i) * 48) * .035);
     geometry.computeVertexNormals();
     const curtain = mesh(geometry, material('#e3ded2', { roughness: 1, side: THREE.DoubleSide, map: textures.fabric }), [-2.73, 1.51, z], [0, Math.PI / 2, 0]);
-    curtain.castShadow = false;
+    curtain.castShadow = false; curtains.push(curtain);
   }
   stem([-2.72, 2.86, -1.26], [-2.72, 2.86, 1.97], .014, darkMetal);
 
@@ -153,5 +162,17 @@ export function createRoomModel(textures = {}) {
   const lampShade = cylinder(.22, .30, .34, material('#d9cdb2', { roughness: .95, side: THREE.DoubleSide }), [1.50, 1.63, -1.98]);
   lampShade.castShadow = false;
 
-  return { group, paintBack, paintSide, backWall, sideWall, wallNeutral: new THREE.Color('#F0EFE5') };
+  // The ceiling is shown only in the ceiling study: an architectural cutaway.
+  const ceiling = box([6.1, .10, 5.62], paintCeiling, [0, 2.98, -.01]);
+  ceiling.visible = false;
+  const ceilingDetails = new THREE.Group(); group.add(ceilingDetails);
+  for (const x of [-1.7, 1.7]) for (const z of [-1.7, 1.3]) {
+    cylinder(.08, .08, .025, trim, [x, 2.915, z], null, ceilingDetails);
+    cylinder(.057, .057, .028, new THREE.MeshBasicMaterial({ color: '#fff7e5' }), [x, 2.902, z], null, ceilingDetails);
+  }
+  ceilingDetails.visible = false;
+  return { group, paintBack, paintSide, backWall, sideWall, paintFrame, frameMeshes,
+    paintCeiling, ceiling, ceilingDetails, curtains, wornWall, wornCeiling, wornFrame,
+    wallNeutral: new THREE.Color('#F0EFE5') };
+
 }

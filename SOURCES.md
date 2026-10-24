@@ -55,3 +55,8 @@ RAL, HEX and RGB have separate input panels. RGB values must be integers between
 The advice option is exclusive with specific services, including selections made from quick links or service details. The property choices explicitly distinguish owned and rented homes. Every service has its own original SVG icon.
 
 The Railway configuration serves the static site with Caddy, reads the assigned PORT and supplies /health. The source can be deployed without ChatGPT authentication, build tooling or API keys. Railway itself has not been deployed by the assistant.
+
+
+## Interactieve afwerkstudio (25 oktober 2026)
+
+De 3D-kamer, meubels, kozijnonderdelen, plafondgeometrie en de procedurele structuur/verwering zijn voor dit websitevoorbeeld geschreven met de meegeleverde Three.js-code. De vóór/na-beelden zijn twee materiaaltoestanden van hetzelfde ontworpen model. Het zijn geen foto's van klantwerk en geen bouwkundige of kleurgetrouwe fysieke voorspelling. De website vermeldt dit bij de weergave. De bestaande geverifieerde RAL-schermwaarden blijven ongewijzigd.
