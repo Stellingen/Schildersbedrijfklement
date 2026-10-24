@@ -55,3 +55,20 @@ docker run --rm -p 3000:3000 -e PORT=3000 klement-website
 - https://docs.railway.com/guides/github-autodeploys
 
 De bedrijfscontent en afbeeldingen zijn geen vrij herbruikbare template. De meegeleverde externe software en lettertypen behouden hun eigen licenties.
+
+## Vorige vormgeving terugzetten
+
+De volledige versie vóór deze designtest is bewaard op GitHub-branch `backup/voor-design-test-20261024`.
+
+Om alleen de eerdere vormgeving te herstellen en de verwijderde bovenbalk weg te laten:
+
+```sh
+git fetch origin
+git switch main
+git restore --source origin/backup/voor-design-test-20261024 -- dist/style.css
+git add dist/style.css
+git commit -m "Herstel vorige vormgeving"
+git push origin main
+```
+
+Om de volledige vorige versie te bekijken of te hosten, kunt u de backup-branch selecteren als bron. Dat herstelt ook de eerdere bovenbalk.
