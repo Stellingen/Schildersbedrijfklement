@@ -6,7 +6,7 @@ import re, json
 ROOT=Path(__file__).resolve().parents[1]
 DIST=ROOT/'dist'
 source=(ROOT/'src/site.html').read_text()
-VERSION='paginas-20261025'
+VERSION='beheer-20261025'
 PRODUCTION='https://www.schildersbedrijfklement.nl'
 ROUTES={'diensten':'/diensten/','projecten':'/projecten/','over':'/over-klement/','kleur':'/kleurstudio/','werkwijze':'/werkwijze/','offerte':'/offerte/','contact':'/contact/','bedrijfsgegevens':'/contact/#bedrijfsgegevens','reviews':'/over-klement/#reviews'}
 # Remove decorative numbering from the HTML itself, including screen-reader output.
@@ -48,7 +48,7 @@ head=re.sub(r'<script type="module" src="color-lab.js[^\"]*"></script>\s*','',he
 head=re.sub(r'<script type="module" src="gallery.js[^\"]*"></script>\s*','',head)
 head=head.replace('href="studio.css?v=bedrijf-20261025"',f'href="studio.css?v={VERSION}"')
 head=re.sub(r'src="app.js[^\"]*"', f'src="app.js?v={VERSION}"', head)
-head=head.replace('</head>',f'<link rel="stylesheet" href="/pages.css?v={VERSION}">\n</head>')
+head=head.replace('</head>',f'<link rel="stylesheet" href="/pages.css?v={VERSION}"><script type="module" src="/tracking.js?v={VERSION}"></script>\n</head>')
 tail=tail.replace('<button class="privacy-trigger">Privacy</button>','<a href="/privacy/">Privacy</a>')
 tail=tail.replace('<a href="#">Terug naar boven ↑</a>','<a href="#main">Terug naar boven ↑</a>')
 # All pages carry accessible native dialogs; initialisation is page-aware.
@@ -97,7 +97,7 @@ pages={
  'werkwijze':{'path':'/werkwijze/','title':'Onze werkwijze | Schildersbedrijf Klement','description':'Van uw eerste idee tot de laatste streek. Lees hoe Klement uw wensen bespreekt, een offerte maakt en de afwerking met u naloopt.','html':intro('Werkwijze','Een helder plan.<br>Van begin tot afwerking.','U vertelt wat u wilt aanpakken. Wij denken mee, stemmen het werk en de planning af en hebben aandacht voor de laatste details.')+parts['werkwijze']+process_note+parts['faq']+common_cta},
  'offerte':{'path':'/offerte/','title':'Vrijblijvende offerte aanvragen | Schildersbedrijf Klement','description':'Vertel Klement over uw schilder- of afwerkingsklus in Twente. Stel in een paar stappen uw vrijblijvende offerteaanvraag samen.','html':quote+parts['faq']},
  'contact':{'path':'/contact/','title':'Contact en bedrijfsgegevens | Schildersbedrijf Klement','description':'Neem contact op met Schildersbedrijf Klement in Twente: +31 6 43683995 of info@schildersbedrijfklement.nl. KvK 87316374.','html':intro('Contact','Een klein idee?<br>Begin met een gesprek.','Bel ons, mail uw plannen of gebruik de offertehulp. We bespreken graag wat er nodig is voor uw woning of bedrijfspand in Twente.')+parts['bedrijfsgegevens']+parts['faq']+common_cta},
- 'privacy':{'path':'/privacy/','title':'Privacy bij uw aanvraag | Schildersbedrijf Klement','description':'Lees hoe de website van Schildersbedrijf Klement met uw aanvraag en contactgegevens omgaat.','html':intro('Privacy','Uw gegevens.<br>Duidelijk uitgelegd.','Zo werkt het invullen en per e-mail versturen van uw aanvraag op deze website.')+privacy_page}
+ 'privacy':{'path':'/privacy/','title':'Privacy bij uw aanvraag | Schildersbedrijf Klement','description':'Lees hoe de website van Schildersbedrijf Klement met uw aanvraag en contactgegevens omgaat.','html':intro('Privacy','Uw gegevens.<br>Duidelijk uitgelegd.','Zo gaan we om met uw websitebezoek en het versturen van uw aanvraag.')+privacy_page}
 }
 
 for key,page in pages.items():
@@ -116,5 +116,5 @@ for key,page in pages.items():
     destination=DIST/active.strip('/')/'index.html' if active!='/' else DIST/'index.html'
     destination.parent.mkdir(parents=True,exist_ok=True);destination.write_text(html)
 (DIST/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+''.join('<url><loc>'+PRODUCTION+page['path']+'</loc></url>' for page in pages.values())+'</urlset>\n')
-(DIST/'robots.txt').write_text('User-agent: *\nAllow: /\nSitemap: '+PRODUCTION+'/sitemap.xml\n')
+(DIST/'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dash\nDisallow: /api/\nSitemap: '+PRODUCTION+'/sitemap.xml\n')
 print('Built',len(pages),'static pages:',', '.join(page['path'] for page in pages.values()))
