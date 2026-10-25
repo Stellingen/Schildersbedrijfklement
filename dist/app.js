@@ -227,6 +227,7 @@ $('.copy-request').addEventListener('click', async () => {
 const preference = quotePreference(location.search);
 if (preference.service) selectService(preference.service);
 if (preference.choice) { enquiryColor = preference.choice; renderColor(); }
+$('#next').disabled = false;
 return { start(service, color) {
   if (serviceData[service]) selectService(service);
   if (color) enquiryColor = { ...color };

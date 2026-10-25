@@ -83,6 +83,7 @@ for file,photoid,caption in photos:
     projects_extra+=f'<button class="photo-detail" data-gallery="all" data-photo="{photoid}"><span><img src="/assets/{file}" alt="{caption}" loading="lazy" width="600" height="450"><svg class="icon"><use href="#arrow-up"/></svg></span><strong>{caption}</strong></button>'
 projects_extra+='</div></div></section>'
 quote=parts['offerte'].replace('<h2>Vertel ons<br>over uw klus.</h2>','<h1 class="quote-page-title">Vertel ons<br>over uw klus.</h1>',1)
+quote=quote.replace('id="next">','id="next" disabled>')
 privacy_page=f'<section class="section privacy-page"><div class="container"><article class="privacy-reading">{privacy_content}</article></div></section>'
 pages={
  'home':{'path':'/','title':'Schildersbedrijf Klement | Schilderwerk en afwerking in Twente','description':'Schilderwerk, stucwerk, behang en afwerking in Twente. Bekijk ons werk, ontdek de 3D-studio en vraag vrijblijvend een offerte aan.','html':parts['hero']+parts['quick-start']+parts['promise-bar']+parts['diensten']+about_teaser+parts['projecten']+studio_teaser+parts['reviews']+common_cta},
