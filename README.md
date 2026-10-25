@@ -80,3 +80,8 @@ git push origin main
 ```
 
 De oudere proefversie blijft daarnaast beschikbaar op `backup/voor-design-test-20261024`.
+
+
+## Detailuitwerking afwerkstudio
+
+De studio bevat een echte raamopening met getrapte kozijnprofielen, aparte glasvlakken, afdichtingen, raamkruk, scharnieren en vensterbank. De vóór-stand gebruikt een illustratieve verweerde laag; de na-stand heeft instelbare lakglans met lokale omgevingsreflecties. Stucwerk kent gladde en fijn gestructureerde voorbeelden. De drie vaste camerastanden zijn per ondergrond afgestemd op overzicht, oppervlak en aansluiting. Klikken op een zichtbare wand of een kozijn selecteert het onderdeel; slepen draait de camera. Volledig scherm is beschikbaar waar de browser dit ondersteunt. De gekozen stucstructuur wordt naast kleur en onderdeel in de aanvraag meegenomen. Dit zijn afwerkingsvoorbeelden; geschiktheid en uitvoering worden met Klement afgestemd.

@@ -1,15 +1,17 @@
 import * as THREE from './assets/three.module.js';
 import { OrbitControls } from './assets/OrbitControls.js';
-import { createRoomModel } from './room-model.js?v=studio-20261025';
-import { createPaintMode } from './paint-mode.js?v=studio-20261025';
+import { createRoomModel } from './room-model.js?v=details-20261025';
+import { createPaintMode } from './paint-mode.js?v=details-20261025';
 
-import { studioScenes, studioTarget, comparisonSplit } from './studio-state.js?v=studio-20261025';
+import { studioTarget, studioView, comparisonSplit } from './studio-state.js?v=details-20261025';
 
 function makeTexture(kind) {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 256;
+  canvas.width = canvas.height = 512;
+  const textureScale = 2;
   const context = canvas.getContext('2d');
   if (!context) return null;
+  context.scale(textureScale, textureScale);
   let seed = 412;
   const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
   if (kind === 'worn-plaster' || kind === 'worn-wood') {
@@ -44,7 +46,7 @@ function makeTexture(kind) {
   } else {
     context.fillStyle = kind === 'wood' ? '#c3ad8b' : '#dddddd';
     context.fillRect(0, 0, 256, 256);
-    const pixels = context.getImageData(0, 0, 256, 256);
+    const pixels = context.getImageData(0, 0, 512, 512);
     for (let i = 0; i < pixels.data.length; i += 4) {
       const noise = (random() - .5) * (kind === 'wood' ? 10 : 26);
       for (let c = 0; c < 3; c++) pixels.data[i + c] += noise;
@@ -114,6 +116,26 @@ export function createColorRoom(host, initialState) {
   };
   const model = createRoomModel(textures);
   scene.add(model.group);
+  // A small, original studio environment supplies reflections for lacquer, metal and glass.
+  // No HDR download, external renderer or network dependency is needed.
+  const environmentScene = new THREE.Scene();
+  environmentScene.background = new THREE.Color('#b7c2cb');
+  const envelope = new THREE.Mesh(new THREE.BoxGeometry(14, 9, 14), new THREE.MeshBasicMaterial({ color: '#aeb9c4', side: THREE.BackSide }));
+  environmentScene.add(envelope);
+  for (const [size, position, rotation, color] of [
+    [[3.5, 5, .01], [-5,2,0], [0,Math.PI/2,0], '#ffffff'],
+    [[3, 4, .01], [4,1.5,-4], [0,-Math.PI/4,0], '#dceeff'],
+    [[4, 2, .01], [0,3.8,0], [Math.PI/2,0,0], '#ffffff']
+  ]) {
+    const card = new THREE.Mesh(new THREE.BoxGeometry(...size), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+    card.position.set(...position); card.rotation.set(...rotation); environmentScene.add(card);
+  }
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const environmentTarget = pmrem.fromScene(environmentScene, .04);
+  scene.environment = environmentTarget.texture; scene.environmentIntensity = .45;
+  pmrem.dispose();
+  environmentScene.traverse(object => { if (object.isMesh) { object.geometry.dispose(); object.material.dispose(); } });
+
   // A reference mode bypasses scene illumination and tone mapping on paint.
   // Input sRGB -> linear storage -> sRGB output preserves the supplied code.
   const applyPaintMode = createPaintMode(model);
@@ -124,7 +146,7 @@ export function createColorRoom(host, initialState) {
   sunlight.position.set(-3.0, 5.0, 2.5);
   sunlight.target.position.set(.8, .1, -1);
   sunlight.castShadow = true;
-  sunlight.shadow.mapSize.set(2048, 2048);
+  sunlight.shadow.mapSize.set(window.innerWidth < 700 ? 1024 : 2048, window.innerWidth < 700 ? 1024 : 2048);
   sunlight.shadow.camera.left = -5; sunlight.shadow.camera.right = 5;
   sunlight.shadow.camera.top = 5; sunlight.shadow.camera.bottom = -5;
   sunlight.shadow.camera.near = .5; sunlight.shadow.camera.far = 18;
@@ -154,16 +176,19 @@ export function createColorRoom(host, initialState) {
     renderer.setScissorTest(false);
   }
   function setView(state, force = false) {
-    const key = state.scene + ':' + studioTarget(state);
+    const key = state.scene + ':' + studioTarget(state) + ':' + state.view;
     if (!force && key === activeView) return;
     activeView = key;
     const ceiling = studioTarget(state) === 'ceiling';
-    const config = studioScenes[state.scene];
-    origin = new THREE.Vector3(...(ceiling ? [4.4, 1.1, 5.8] : config.camera));
-    originTarget = new THREE.Vector3(...(ceiling ? [0, 2.3, -.2] : config.target));
-    controls.minDistance = config.minDistance; controls.maxDistance = config.maxDistance;
-    controls.minPolarAngle = ceiling ? 1.54 : .83;
-    controls.maxPolarAngle = ceiling ? 1.88 : 1.65;
+    const config = studioView(state);
+    origin = new THREE.Vector3(...config.camera);
+    originTarget = new THREE.Vector3(...config.target);
+    controls.minDistance = config.min; controls.maxDistance = config.max;
+    const angle = Math.atan2(origin.x - originTarget.x, origin.z - originTarget.z);
+    controls.minAzimuthAngle = Math.max(-.65, angle - .55);
+    controls.maxAzimuthAngle = Math.min(1.52, angle + .55);
+    controls.minPolarAngle = ceiling ? 1.54 : .5;
+    controls.maxPolarAngle = ceiling ? 2.35 : 1.68;
     camera.position.copy(origin); controls.target.copy(originTarget); controls.update();
   }
   function resize() {
@@ -221,6 +246,31 @@ export function createColorRoom(host, initialState) {
     } else if (event.key === '+' || event.key === '=') { event.preventDefault(); zoom(.88); }
     else if (event.key === '-') { event.preventDefault(); zoom(1.13); }
     else if (event.key === 'Home') { event.preventDefault(); reset(); }
+  });
+  // A short click selects the visible surface; dragging continues to orbit the camera.
+  model.backWall.userData.studioPart = 'walls';
+  model.sideWalls.forEach(mesh => { mesh.userData.studioPart = 'walls'; });
+  [...model.frameMeshes, ...model.glazingMeshes].forEach(mesh => { mesh.userData.studioPart = 'frames'; });
+  model.ceiling.userData.studioPart = 'ceiling';
+  model.frameWear.userData.studioPart = 'frames';
+  const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
+  let pointerStart = null;
+  renderer.domElement.addEventListener('pointerdown', event => { pointerStart = { x: event.clientX, y: event.clientY, id: event.pointerId, time: performance.now() }; });
+  renderer.domElement.addEventListener('pointercancel', () => { pointerStart = null; });
+  renderer.domElement.addEventListener('pointerup', event => {
+    const start = pointerStart; pointerStart = null;
+    if (!start || start.id !== event.pointerId || performance.now() - start.time > 600 || Math.hypot(event.clientX-start.x,event.clientY-start.y) > 6) return;
+    const bounds = renderer.domElement.getBoundingClientRect();
+    pointer.set((event.clientX-bounds.left)/bounds.width*2-1, -(event.clientY-bounds.top)/bounds.height*2+1);
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObject(model.group, true).find(hit => {
+      let object = hit.object;
+      while (object) { if (!object.visible) return false; object = object.parent; }
+      return true;
+    });
+    let object = hit?.object, target = null;
+    while (object && !target) { target = object.userData.studioPart; object = object.parent; }
+    if (target) document.dispatchEvent(new CustomEvent('klement-surface-pick', { detail: { target } }));
   });
   setView(initialState, true); controls.update(); resize(); update(initialState);
   return { update, orbit, zoom, reset };

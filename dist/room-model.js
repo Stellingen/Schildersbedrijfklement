@@ -9,9 +9,12 @@ export function createRoomModel(textures = {}) {
   const material = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: .85, ...Object.fromEntries(Object.entries(extra).filter(([, value]) => value !== undefined)) });
   const white = material('#f4f2eb');
   const trim = material('#f1f0e9', { roughness: .4 });
-  const paintFrame = material('#363E42', { roughness: .28, metalness: .04 });
+  const paintFrame = new THREE.MeshPhysicalMaterial({ color: '#363E42', roughness: .28, metalness: 0, clearcoat: .65, clearcoatRoughness: .18, bumpMap: textures.plaster || null, bumpScale: .0006 });
   const paintCeiling = material('#F0EFE5', { roughness: .98 });
-  const frameMeshes = [], curtains = [];
+  const frameMeshes = [], curtains = [], glazingMeshes = [];
+  const frameWear = new THREE.Group(); frameWear.name = 'Illustrative chipped finish'; group.add(frameWear);
+  const seal = material('#303b40', { roughness: .85 });
+  const hardware = material('#b8bfc3', { roughness: .23, metalness: .85 });
   const wornWall = material('#c5b9a1', { map: textures.wornPlaster, bumpMap: textures.wornPlaster, bumpScale: .06, roughness: 1 });
   const wornCeiling = material('#c7c4ba', { map: textures.wornPlaster, bumpMap: textures.wornPlaster, bumpScale: .075, roughness: 1 });
   const wornFrame = material('#a69a7c', { map: textures.wornWood, bumpMap: textures.wornWood, bumpScale: .025, roughness: .95 });
@@ -58,7 +61,14 @@ export function createRoomModel(textures = {}) {
     }
   }
   const backWall = box([6.12, 2.95, .15], paintBack, [0, 1.46, -2.83]);
-  const sideWall = box([.15, 2.95, 5.65], paintSide, [-3.08, 1.46, 0]);
+  // Four wall sections create a genuine opening rather than a picture on a solid wall.
+  const sideWalls = [
+    box([.15, .68, 5.65], paintSide, [-3.08, .315, 0]),
+    box([.15, .335, 5.65], paintSide, [-3.08, 2.7675, 0]),
+    box([.15, 1.945, 2.115], paintSide, [-3.08, 1.6275, -1.7675]),
+    box([.15, 1.945, 1.415], paintSide, [-3.08, 1.6275, 2.1175])
+  ];
+  const sideWall = sideWalls[0];
   box([6, .12, .035], trim, [0, .08, -2.738]);
   box([.035, .12, 5.5], trim, [-2.983, .08, 0]);
   box([6.1, .055, .06], white, [0, 2.89, -2.73]);
@@ -66,7 +76,8 @@ export function createRoomModel(textures = {}) {
 
   // A bright garden window on the side wall. The frame stands proud of the wall.
   const view = new THREE.MeshBasicMaterial({ map: textures.garden || null, color: '#e6eddb' });
-  box([.035, 1.75, 2.0], view, [-2.981, 1.65, .35]);
+  const gardenView = box([.025, 1.91, 2.11], view, [-3.20, 1.65, .35]);
+  gardenView.castShadow = false; gardenView.receiveShadow = false;
   const frameX = -2.91;
   const frameBox = (size, position) => { const m = box(size, paintFrame, position, .008); frameMeshes.push(m); return m; };
   for (const z of [-.71, 1.41]) frameBox([.11, 1.94, .095], [frameX, 1.65, z]);
@@ -74,8 +85,40 @@ export function createRoomModel(textures = {}) {
   frameBox([.11, 1.84, .06], [frameX + .01, 1.65, .35]);
   frameBox([.12, .06, 2.1], [frameX + .01, 1.6, .35]);
   frameBox([.27, .07, 2.3], [-2.85, .68, .35]);
-  frameBox([.045, .26, .035], [-2.835, 1.38, .48]);
-  cylinder(.025, .025, .055, darkMetal, [-2.80, 1.41, .48], [0, 0, Math.PI / 2]);
+  // Layered jambs, stepped sash profiles, seals and separate glazing panes.
+  for (const z of [-.705, 1.405]) {
+    frameBox([.20, 1.94, .075], [-3.025, 1.65, z]);
+    frameBox([.035, 1.78, .035], [-2.842, 1.65, z + (z < 0 ? .052 : -.052)]);
+  }
+  for (const y of [.75, 2.55]) frameBox([.055, .035, 2.02], [-2.839, y, .35]);
+  const glass = new THREE.MeshPhysicalMaterial({ color: '#dfeef5', transparent: true, opacity: .16, roughness: .055, metalness: .05, clearcoat: 1, depthWrite: false });
+  for (const z of [-.17, .87]) for (const y of [1.15, 2.10]) {
+    const pane = box([.012, .83, .95], glass, [-2.944, y, z]); pane.castShadow = false; glazingMeshes.push(pane);
+    for (const edgeZ of [z - .475, z + .475]) box([.018, .84, .012], seal, [-2.865, y, edgeZ]);
+    for (const edgeY of [y - .415, y + .415]) box([.018, .012, .95], seal, [-2.865, edgeY, z]);
+  }
+  // Metal fittings sit on the painted sash rather than sharing its paint material.
+  box([.024, .14, .047], hardware, [-2.828, 1.41, .43], .009);
+  cylinder(.018, .018, .045, hardware, [-2.797, 1.41, .43], [0, 0, Math.PI / 2]);
+  box([.035, .032, .16], hardware, [-2.776, 1.41, .50], .013);
+  for (const y of [.94, 2.36]) {
+    cylinder(.017, .017, .11, hardware, [-2.822, y, 1.363]);
+    for (const dy of [-.045, .045]) cylinder(.022, .022, .009, hardware, [-2.822, y + dy, 1.363]);
+  }
+  for (const y of [1.36, 1.46]) {
+    cylinder(.007, .007, .004, darkMetal, [-2.811, y, .43], [0, 0, Math.PI / 2]);
+    box([.005, .0018, .01], hardware, [-2.808, y, .43]);
+  }
+  // Thin sealant lines and a rounded sill edge become visible in the junction view.
+  for (const z of [-.77, 1.47]) box([.009, 1.99, .012], trim, [-2.843, 1.65, z]);
+  frameBox([.034, .022, 2.22], [-2.706, .66, .35]);
+  const chipMat = material('#877052', { roughness: 1 });
+  for (let i = 0; i < 18; i++) {
+    const y = .83 + ((i * 47) % 160) / 100, z = i % 2 ? 1.41 : -.71;
+    const shape = new THREE.Shape();
+    shape.moveTo(0,0); shape.lineTo(.018, .007); shape.lineTo(.029,.024); shape.lineTo(.013,.036); shape.lineTo(-.004,.019); shape.closePath();
+    mesh(new THREE.ShapeGeometry(shape), chipMat, [-2.849, y, z], [0, Math.PI / 2, i * .41], frameWear);
+  }
   for (const z of [-.95, 1.66]) {
     const geometry = new THREE.PlaneGeometry(.55, 2.66, 20, 1);
     const positions = geometry.attributes.position;
@@ -173,6 +216,7 @@ export function createRoomModel(textures = {}) {
   ceilingDetails.visible = false;
   return { group, paintBack, paintSide, backWall, sideWall, paintFrame, frameMeshes,
     paintCeiling, ceiling, ceilingDetails, curtains, wornWall, wornCeiling, wornFrame,
+    sideWalls, frameWear, glass, glazingMeshes,
     wallNeutral: new THREE.Color('#F0EFE5') };
 
 }

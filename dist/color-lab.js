@@ -1,13 +1,13 @@
 import { paintColors } from './paint-data.js';
 import { resolvePaint, paintFromRgb, rgbChannels } from './paint-resolver.js';
-import { studioScenes, studioTarget, studioChoice } from './studio-state.js?v=studio-20261025';
+import { studioScenes, studioTarget, studioChoice, studioDetail } from './studio-state.js?v=details-20261025';
 
 const palette = document.querySelector('#paint-palette');
 const input = document.querySelector('#paint-code');
 const message = document.querySelector('#paint-message');
 const useColor = document.querySelector('#use-color');
 const savedPaints = { walls: paintColors.find(p => p.code === 'RAL 6021'), frames: paintColors.find(p => p.code === 'RAL 7016'), ceiling: paintColors[0] };
-const state = { paint: savedPaints.walls, colors: Object.fromEntries(Object.entries(savedPaints).map(([key, paint]) => [key, paint.hex])), scene: 'walls', surface: 'walls', wall: 'all', light: 'day', finish: 'satin', compare: 50 };
+const state = { paint: savedPaints.walls, colors: Object.fromEntries(Object.entries(savedPaints).map(([key, paint]) => [key, paint.hex])), scene: 'walls', surface: 'walls', wall: 'all', light: 'day', finish: 'satin', texture: 'smooth', view: 'overview', compare: 50 };
 let room = null, codeMode = 'ral';
 const modes = ['ral', 'hex', 'rgb'];
 const rgbInputs = ['#rgb-red', '#rgb-green', '#rgb-blue'].map(selector => document.querySelector(selector));
@@ -59,7 +59,7 @@ function applyPaint(paint) {
   populateFields();
   message.classList.remove('error');
   message.textContent = paint.source ? 'Gekozen: ' + paint.code + '. Kies Codekleur om de digitale schermwaarde zonder lichtfilter te bekijken.' : 'Digitale kleur toegepast. Dit is een RGB/HEX-waarde, geen verfmengrecept.';
-  announceColor(); room?.update(state);
+  announceColor(); room?.update(state); updateStudioLabels();
 }
 
 document.querySelectorAll('[data-code-mode]').forEach(tab => {
@@ -111,7 +111,15 @@ document.querySelector('#custom-paint').addEventListener('input', event => {
   if (paint) { switchMode('hex'); applyPaint(paint); }
 });
 function updateStudioLabels() {
-  document.querySelector('#studio-view-title').textContent = studioScenes[state.scene].title;
+  const target = studioTarget(state), detail = studioDetail(state);
+  document.querySelector('#studio-view-title').textContent = target === 'ceiling' ? 'Plafond · vóór & na' : studioScenes[state.scene].title;
+  document.querySelector('#texture-settings').hidden = state.scene !== 'plaster';
+  document.querySelector('#selection-part').textContent = target === 'ceiling' ? 'Plafond stucen en afwerken' : studioScenes[state.scene].label;
+  document.querySelector('#selection-summary').textContent = state.paint.code + ' · ' + detail.finish;
+  document.querySelector('#selection-chip').style.background = state.paint.hex;
+  document.querySelector('#detail-title').textContent = detail.title;
+  document.querySelector('#detail-list').replaceChildren(...detail.items.map(text => { const item = document.createElement('li'); item.textContent = text; return item; }));
+  document.querySelector('#view-help').textContent = { overview: 'Het geheel in beeld', detail: 'Bekijk het oppervlak van dichtbij', junction: 'Bekijk de randen en aansluitingen' }[state.view];
   document.querySelector('#studio-description').textContent = studioScenes[state.scene].description;
   document.querySelector('#wall-settings').hidden = studioTarget(state) !== 'walls';
   document.querySelector('#plaster-settings').hidden = state.scene !== 'plaster';
@@ -125,14 +133,18 @@ function changeTarget(setting, value) {
   const oldTarget = studioTarget(state);
   savedPaints[oldTarget] = state.paint;
   state[setting] = value;
+  if (setting === 'scene' || setting === 'surface') {
+    state.view = state.scene === 'frames' ? 'detail' : 'overview';
+    document.querySelectorAll('[data-view]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.view === state.view)));
+  }
   document.querySelectorAll('[data-' + setting + ']').forEach(other => other.setAttribute('aria-pressed', String(other.dataset[setting] === value)));
   if (setting === 'scene' || setting === 'surface') {
     applyPaint(savedPaints[studioTarget(state)]);
   } else { announceColor(); room?.update(state); }
   updateStudioLabels();
 }
-document.querySelectorAll('[data-wall], [data-light], [data-scene], [data-surface], [data-finish]').forEach(button => button.addEventListener('click', () => {
-  const setting = ['wall', 'light', 'scene', 'surface', 'finish'].find(key => key in button.dataset);
+document.querySelectorAll('[data-wall], [data-light], [data-scene], [data-surface], [data-finish], [data-view], [data-texture]').forEach(button => button.addEventListener('click', () => {
+  const setting = ['wall', 'light', 'scene', 'surface', 'finish', 'view', 'texture'].find(key => key in button.dataset);
   changeTarget(setting, button.dataset[setting]);
 }));
 const compareRange = document.querySelector('#compare-range');
@@ -168,14 +180,28 @@ function unavailable() {
   document.querySelector('#room-loading').hidden = true; document.querySelector('#room-fallback').hidden = false;
   document.querySelector('.room-tools').hidden = true; document.querySelector('#room-drag-hint').hidden = true;
   document.querySelector('#room-reset').disabled = true;
-  document.querySelectorAll('[data-wall], [data-light], [data-finish], [data-compare], #compare-range').forEach(button => { button.disabled = true; });
+  document.querySelectorAll('[data-wall], [data-light], [data-finish], [data-view], [data-compare], #compare-range').forEach(button => { button.disabled = true; });
   document.querySelector('.comparison-badges').hidden = true; document.querySelector('#comparison-divider').hidden = true;
 }
+document.addEventListener('klement-surface-pick', event => {
+  const { target } = event.detail;
+  if (target === 'frames') changeTarget('scene', 'frames');
+  else if (target === 'ceiling') { changeTarget('scene', 'plaster'); changeTarget('surface', 'ceiling'); }
+  else if (target === 'walls') { if (state.scene === 'frames') changeTarget('scene', 'walls'); else if (state.surface === 'ceiling') changeTarget('surface', 'walls'); changeTarget('view', 'detail'); }
+});
+const expand = document.querySelector('#room-expand'), panel = document.querySelector('.room-panel');
+if (panel.requestFullscreen && document.fullscreenEnabled) expand.hidden = false;
+expand.addEventListener('click', async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen(); else await panel.requestFullscreen();
+  } catch { document.querySelector('#view-help').textContent = 'Volledig scherm is niet beschikbaar. Gebruik Dichtbij om details te bekijken.'; }
+});
+document.addEventListener('fullscreenchange', () => { const full = document.fullscreenElement === panel; expand.textContent = full ? 'Verkleinen ↙' : 'Vergroten ↗'; expand.setAttribute('aria-label', full ? 'Volledig scherm sluiten' : 'Open de 3D-studio op volledig scherm'); });
 let started = false;
 async function startRoom() {
   if (started) return; started = true;
   try {
-    const { createColorRoom } = await import('./room-viewer.js?v=studio-20261025');
+    const { createColorRoom } = await import('./room-viewer.js?v=details-20261025');
     room = createColorRoom(document.querySelector('#room-viewport'), state);
     document.querySelector('#room-loading').hidden = true;
   } catch (error) { console.warn('3D-kamer niet beschikbaar:', error.message); unavailable(); }

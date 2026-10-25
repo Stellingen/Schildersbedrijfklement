@@ -1,5 +1,5 @@
 import * as THREE from './assets/three.module.js';
-import { studioTarget } from './studio-state.js?v=studio-20261025';
+import { studioTarget } from './studio-state.js?v=details-20261025';
 
 export function createPaintMode(model) {
   const exactBack = new THREE.MeshBasicMaterial({ toneMapped: false });
@@ -16,9 +16,17 @@ export function createPaintMode(model) {
     model.paintCeiling.color.set(colors.ceiling); exactCeiling.color.set(colors.ceiling);
     model.paintFrame.roughness = state.finish === 'gloss' ? .1 : .35;
     model.paintFrame.metalness = 0;
+    model.paintFrame.clearcoat = state.finish === 'gloss' ? 1 : .35;
+    model.paintFrame.clearcoatRoughness = state.finish === 'gloss' ? .08 : .35;
+    const structured = state.scene === 'plaster' && state.texture === 'fine';
+    model.paintBack.bumpScale = structured ? .022 : .0015;
+    model.paintSide.bumpScale = structured ? .022 : .0015;
+    model.paintCeiling.bumpMap = model.paintBack.bumpMap;
+    model.paintCeiling.bumpScale = structured ? .022 : .0015;
+    model.frameWear.visible = before && target === 'frames';
     const oldWalls = before && target === 'walls';
     model.backWall.material = oldWalls ? model.wornWall : exact ? exactBack : model.paintBack;
-    model.sideWall.material = oldWalls && state.wall === 'all' ? model.wornWall : exact ? exactSide : model.paintSide;
+    for (const wall of model.sideWalls) wall.material = oldWalls && state.wall === 'all' ? model.wornWall : exact ? exactSide : model.paintSide;
     // Rough plaster is distinct from the smooth painted surface in the walls scene.
     model.wornWall.bumpScale = state.scene === 'plaster' ? .085 : .024;
     model.wornWall.color.set(state.scene === 'plaster' ? '#d4c8b2' : '#c5bea9');
