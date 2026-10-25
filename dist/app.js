@@ -239,3 +239,8 @@ $$('.faq details').forEach(detail => detail.addEventListener('toggle', () => {
   if (detail.open) $$('.faq details').forEach(other => { if (other !== detail) other.open = false; });
 }));
 $('#year').textContent = new Date().getFullYear();
+
+// The business-details link leaves the privacy dialog before navigating on the page.
+document.querySelector('.privacy-company-link')?.addEventListener('click', () => {
+  document.querySelector('#privacy-dialog').close();
+});

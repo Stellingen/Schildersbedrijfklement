@@ -85,3 +85,8 @@ De oudere proefversie blijft daarnaast beschikbaar op `backup/voor-design-test-2
 ## Detailuitwerking afwerkstudio
 
 De studio bevat een echte raamopening met getrapte kozijnprofielen, aparte glasvlakken, afdichtingen, raamkruk, scharnieren en vensterbank. De vóór-stand gebruikt een illustratieve verweerde laag; de na-stand heeft instelbare lakglans met lokale omgevingsreflecties. Stucwerk kent gladde en fijn gestructureerde voorbeelden. De drie vaste camerastanden zijn per ondergrond afgestemd op overzicht, oppervlak en aansluiting. Klikken op een zichtbare wand of een kozijn selecteert het onderdeel; slepen draait de camera. Volledig scherm is beschikbaar waar de browser dit ondersteunt. De gekozen stucstructuur wordt naast kleur en onderdeel in de aanvraag meegenomen. Dit zijn afwerkingsvoorbeelden; geschiktheid en uitvoering worden met Klement afgestemd.
+
+
+## Bedrijfsgegevens
+
+De bedrijfssectie en footer vermelden KvK 87316374, handelsnaam Klussenbedrijf Klement, actuele contactgegevens, diensten en werkgebied. Dezelfde gecontroleerde gegevens staan in JSON-LD. Het juiste openbare btw-id ontbreekt nog; de oude website vermeldt bij dat label een IBAN en dat is bewust niet gekopieerd. Na aanlevering van het correcte btw-id kan dit aan de bedrijfssectie en JSON-LD worden toegevoegd. Het adres en openingstijden wachten op bevestiging wegens tegenstrijdige openbare vermeldingen. Bronnen en afwegingen staan in SOURCES.md.

@@ -6,7 +6,7 @@
 - Original contact page: https://www.schildersbedrijfklement.nl/contact/
 - Original project gallery: https://www.schildersbedrijfklement.nl/projecten/
 - The original logo has been reused unaltered. Its dominant blue is RGB (30, 113, 183), HEX #1E71B7. A cropped icon from the same supplied artwork is used for the browser tab.
-- The telephone number 06 4368 3995 and email klussenbedrijfdegeneraal@gmail.com are retained as authorized. The original site lists KvK 87316374. The similarly named klussenbedrijfklement.nl lists a different KvK; no reviews or business claims from that site have been imported.
+- The telephone number +31 6 43683995 and email info@schildersbedrijfklement.nl were explicitly supplied and approved by the owner. They supersede the old website email. The original site lists KvK 87316374. The similarly named klussenbedrijfklement.nl lists a different KvK; no reviews or business claims from that site have been imported.
 - The hero and exterior work images are from the original Klement project gallery. Trade photographs already on the original site are retained. The former AI luxury interior and decorative serif font are no longer shipped.
 
 ## Actual Google reviews
@@ -60,3 +60,11 @@ The Railway configuration serves the static site with Caddy, reads the assigned 
 ## Interactieve afwerkstudio (25 oktober 2026)
 
 De 3D-kamer, meubels, kozijnonderdelen, plafondgeometrie en de procedurele structuur/verwering zijn voor dit websitevoorbeeld geschreven met de meegeleverde Three.js-code. De vóór/na-beelden zijn twee materiaaltoestanden van hetzelfde ontworpen model. Het zijn geen foto's van klantwerk en geen bouwkundige of kleurgetrouwe fysieke voorspelling. De website vermeldt dit bij de weergave. De bestaande geverifieerde RAL-schermwaarden blijven ongewijzigd.
+
+
+## Bedrijfsgegevens (25 oktober 2026)
+
+- KvK 87316374 is zichtbaar in de footer van https://www.schildersbedrijfklement.nl/ en komt overeen met https://www.werkspot.nl/profiel/klussenbedrijf-klement en https://companyinfo.nl/organisatieprofiel/burgerlijke-en-utiliteitsbouw/klussenbedrijf-klement-enschede-87316374-000053234251. Company.info vermeldt handelsnaam Klussenbedrijf Klement. De zichtbare merknaam blijft Schildersbedrijf Klement.
+- De oude website zet bij het label btw-nummer een waarde in IBAN-formaat. Dat is geen Nederlands btw-id en is niet overgenomen, ook niet als bankrekening. Er is geen betrouwbaar gepubliceerd btw-id gevonden. Het juiste openbare btw-identificatienummer moet door de eigenaar worden aangeleverd. Zie voor de opbouw de Belastingdienst: https://www.belastingdienst.nl/wps/wcm/connect/nl/btw/content/btw-identificatienummer-en-omzetbelastingnummer.
+- Werkgebied Overijssel/Twente en de zes diensten zijn gebaseerd op de oorspronkelijke website. Contact en e-mail volgen de expliciete instructies van de eigenaar. Adres en openingstijden zijn niet overgenomen: de oorspronkelijke contactpagina noemt Enschede, terwijl gidsen Hengelo vermelden. Zonder bevestiging is geen bezoekadres of vast tijdschema gepubliceerd.
+- De bedrijfsgegevens staan zichtbaar op de pagina en in lokaal opgenomen JSON-LD. Er zijn geen btw-tarieven, keurmerken, verzekeringen, garantietermijnen, aantallen klanten of jaren ervaring toegevoegd.
