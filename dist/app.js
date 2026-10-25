@@ -1,3 +1,4 @@
+import './content.js';
 import { nextServiceSelection } from './quote-selection.js';
 import { quoteURL, quotePreference } from './quote-link.js?v=paginas-20261025';
 'use strict';
@@ -45,7 +46,9 @@ $$('.service-card').forEach(card => card.addEventListener('click', () => {
   const service = serviceData[activeService];
   $('#dialog-title').textContent = service.name;
   $('#dialog-description').textContent = service.description;
-  $('#dialog-image').src = '/assets/' + service.image;
+  const cardImage = $('img', card);
+  $('#dialog-image').src = cardImage.getAttribute('src') || '';
+  $('#dialog-image').hidden = cardImage.hidden;
   $('#dialog-image').alt = $('img', card).alt;
   $('#dialog-points').replaceChildren(...service.points.map(point => {
     const item = document.createElement('li');
@@ -83,7 +86,7 @@ $$('.quick-choice[data-quote]').forEach(button => button.addEventListener('click
 $('#dialog-quote').addEventListener('click', () => { serviceDialog.close(); requestQuote(activeService); });
 
 function initialiseQuote() {
-// Four-step enquiry. No personal data is stored or submitted by the website.
+// Four-step enquiry. The server stores a submission before confirming receipt.
 const form = $('#quote-form');
 if (!form) return null;
 let enquiryColor = null;
@@ -95,6 +98,9 @@ $('#remove-color').addEventListener('click', () => { enquiryColor = null; render
 const steps = $$('.form-step');
 let currentStep = 0;
 let enquiryText = '';
+let submissionId = crypto.randomUUID();
+let sending = false;
+let received = false;
 function reducedMotion() { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
 function chosenServices() { return $$('input[name="services"]:checked', form).map(input => input.value); }
 function applyServiceSelection(selection) {
@@ -126,7 +132,7 @@ function showStep(index, moveFocus = true) {
   $('#step-count').textContent = 'Stap ' + (index + 1) + ' van 4';
   $('#previous').hidden = index === 0;
   $('#form-security').hidden = index !== 0;
-  $('#next').replaceChildren(document.createTextNode(index === 3 ? 'Open e-mail & verstuur ' : 'Volgende stap '));
+  $('#next').replaceChildren(document.createTextNode(index === 3 ? 'Verstuur mijn aanvraag ' : 'Volgende stap '));
   const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   icon.classList.add('icon');
   const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
@@ -190,20 +196,43 @@ function updateSummary() {
   }));
   enquiryText = 'Beste Schildersbedrijf Klement,\n\nIk ontvang graag een vrijblijvende offerte voor de volgende plannen.\n\n' + data.map(([label, content]) => label + ':\n' + content).join('\n\n') + '\n\nIk hoor graag wat de mogelijkheden zijn.\n\nMet vriendelijke groet,\n' + value('name');
 }
-form.addEventListener('submit', event => {
+form.addEventListener('submit', async event => {
   event.preventDefault();
-  if (!validateStep()) return;
+  if (sending || received || !validateStep()) return;
   if (currentStep < 3) { showStep(currentStep + 1); return; }
   updateSummary();
-  const subject = 'Vrijblijvende offerteaanvraag — ' + value('place');
-  const href = 'mailto:info@schildersbedrijfklement.nl?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(enquiryText);
-  window.location.href = href;
-  $('#send-status').textContent = 'Uw e-mailprogramma wordt geopend. Klik daar op verzenden om uw aanvraag te versturen. Opent er niets? Kopieer uw aanvraag en mail deze zelf naar info@schildersbedrijfklement.nl, of bel +31 6 4368 3995.';
-  $('#send-status').hidden = false;
+  sending = true;
+  const button = $('#next'); button.disabled = true;
+  const previous = $('#previous'); previous.disabled = true;
+  button.textContent = 'Uw aanvraag wordt verstuurd…';
+  try {
+    const response = await fetch('/api/enquiries', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: submissionId, services: chosenServices(),
+        place: value('place'), planning: value('planning'), property: value('property'),
+        description: value('description'), name: value('name'), email: value('email'),
+        phone: value('phone'), consent: $('[name="consent"]').checked,
+        website: value('website'), color: enquiryColor })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.received) throw new Error(result.error || 'Uw aanvraag kon niet worden opgeslagen.');
+    received = true;
+    $('#send-status').textContent = 'Bedankt! Uw aanvraag is ontvangen. Uw referentie is ' + result.reference + '. Klement neemt contact met u op over uw plannen. U hoeft geen e-mailprogramma te openen.';
+    $('#send-status').hidden = false;
+    button.textContent = 'Aanvraag ontvangen ✓';
+    previous.hidden = true;
+    $$('input,select,textarea', form).forEach(field => { field.disabled = true; });
+    $('.copy-request').hidden = true;
+    $('#send-status').scrollIntoView({ behavior: reducedMotion() ? 'instant' : 'smooth', block: 'nearest' });
+  } catch (error) {
+    showError((error.message || 'De verbinding is onderbroken.') + ' Uw aanvraag is nog niet bevestigd. Probeer opnieuw, kopieer uw aanvraag of neem rechtstreeks contact op via info@schildersbedrijfklement.nl of +31 6 4368 3995.');
+    button.disabled = false; button.textContent = 'Opnieuw versturen →';
+    previous.disabled = false;
+  } finally { sending = false; }
 });
 $('#previous').addEventListener('click', () => showStep(Math.max(0, currentStep - 1)));
-form.addEventListener('input', hideError);
-form.addEventListener('change', hideError);
+form.addEventListener('input', () => { hideError(); if (!received) submissionId = crypto.randomUUID(); });
+form.addEventListener('change', () => { hideError(); if (!received) submissionId = crypto.randomUUID(); });
 $('.copy-request').addEventListener('click', async () => {
   updateSummary();
   const status = $('#send-status');

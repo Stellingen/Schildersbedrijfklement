@@ -1,5 +1,8 @@
 *
 !Dockerfile
-!Caddyfile
+!package.json
+!package-lock.json
+!server/
+!server/**
 !dist/
 !dist/**

@@ -1,43 +1,18 @@
 # Schildersbedrijf Klement
 
-Website met projectgalerij, vierstaps offertehulp en een 3D-kleurkamer. Alle afbeeldingen, lettertypen en JavaScript-bestanden staan in `dist/`. Er is geen buildstap, database of API-sleutel nodig voor de huidige versie.
+Website met projectgalerij, vierstaps offertehulp en een 3D-kleurkamer. Alle publieke afbeeldingen, lettertypen en JavaScript-bestanden staan in `dist/`. De backend en het beheerdashboard gebruiken MySQL. Er is geen externe 3D-API nodig.
 
-## Hosten op Railway vanuit GitHub
+## Dashboard en Railway
 
-1. Zet deze bestanden in de hoofdmap van een GitHub-repository: `dist/`, `Dockerfile`, `Caddyfile` en `railway.toml`. De overige documentatie mag ook mee. Een private repository is geschikt.
-2. Kies in Railway **New Project → Deploy from GitHub repo** en selecteer de repository. Geef de Railway GitHub-app toegang tot deze repository als daarom wordt gevraagd.
-3. Gebruik de hoofdmap (`/`) als Root Directory. Railway gebruikt de meegeleverde Dockerfile; er is geen apart build- of startcommando nodig.
-4. Maak onder **Settings → Networking → Public Networking** een domein aan. Railway levert HTTPS. Een eigen domein kan daarna via de DNS-instructies van Railway worden aangesloten.
-5. Controleer de website en `/health`. Dat pad moet `ok` teruggeven. De ingestelde healthcheck gebruikt dit pad bij iedere deployment.
+De website gebruikt nu een Node-server met MySQL voor een afgeschermd dashboard op `/admin/`, aanvraagopslag, bezoekersstatistieken en fotobeheer. De openbare pagina’s, foto’s en 3D-studio blijven behouden.
 
-De server luistert op de door Railway ingestelde `PORT` en alle netwerkinterfaces. Zonder `PORT` wordt lokaal poort 3000 gebruikt. Er zijn geen extra omgevingsvariabelen nodig. Gebruik de kosten en gebruikslimieten die in uw eigen Railway-account worden getoond.
+**Volg [ADMIN-GUIDE.md](ADMIN-GUIDE.md)** voor het koppelen van MySQL, het eerste Kevin-account en optionele e-mailmeldingen. De databaseverbinding en het startwachtwoord worden uitsluitend in de Railway-variabelen ingesteld. De server maakt de benodigde tabellen automatisch aan.
 
-Bij een gekoppelde GitHub-branch kan Railway nieuwe commits automatisch deployen. Kies daarvoor de juiste branch in de service-instellingen.
+De meegeleverde Dockerfile is het startpunt voor Railway. Gebruik de hoofdmap van de repository. `/health` blijft de webserver controleren. Uploads worden in MySQL bewaard en overleven een redeployment van de website.
 
-## Lokaal bekijken
+De website ontvangt offerteaanvragen rechtstreeks en bevestigt pas nadat de database de aanvraag heeft opgeslagen. E-mailmeldingen naar Klement zijn optioneel en vereisen SMTP-instellingen. Rechtstreekse mail en telefoongesprekken worden niet automatisch ingelezen. Bezoekersstatistieken starten bij ingebruikname, zonder trackingcookies of verzonnen historische gegevens.
 
-Met Python 3:
-
-```sh
-python3 -m http.server 3000 --directory dist
-```
-
-Open `http://localhost:3000`. Open `index.html` niet rechtstreeks als bestand: de JavaScript-modules hebben een webserver nodig.
-
-Met Docker:
-
-```sh
-docker build -t klement-website .
-docker run --rm -p 3000:3000 -e PORT=3000 klement-website
-```
-
-## Wat werkt en wat nog moet worden gekoppeld
-
-- De offertehulp valideert de gegevens, toont een overzicht en opent een ingevulde e-mail. De bezoeker verstuurt die e-mail zelf. Automatische verzending vanaf de website is nog niet aangesloten.
-- Contactgegevens: +31 6 4368 3995 en info@schildersbedrijfklement.nl. De offertehulp richt de e-mail aan dit adres.
-- De Google-score en citaten zijn een geverifieerde momentopname van 24 oktober 2026, met een link naar het juiste Google-profiel. Ze worden niet automatisch bijgewerkt.
-- De kleurtool gebruikt 24 gepubliceerde RAL-schermwaarden en expliciete HEX/RGB-waarden. Onbekende RAL-, NCS- en winkelcodes worden niet gegokt. Neutraal toont de digitale codekleur zonder lichtfilter; de andere lichtstanden zijn sfeerbeelden. Een schermkleur is geen garantie voor de fysieke verf.
-- Er zijn geen statistiek- of advertentiecookies, externe JavaScript-CDN's of verplichte koppelingen met ChatGPT in de websitecode. Toegangsinstellingen van een eerdere voorbeeldomgeving worden niet meegenomen naar Railway.
+Voor lokale ontwikkeling: `npm ci` en `npm start`, met de database- en accountvariabelen uit `.env.example` ingesteld. De volledige instructies en testcommando’s staan in de dashboardhandleiding.
 
 ## Onderhoud
 
@@ -107,6 +82,6 @@ De gedeelde content en vensters staan in `src/site.html`. Pagina-intro’s, navi
 python3 scripts/build_pages.py
 ```
 
-Railway blijft uitsluitend `dist/` serveren; Python is niet nodig in de draaiende container. `dist/pages.css` verzorgt de pagina-intro’s en overzichten. `dist/app.js` initialiseert het formulier alleen op de offertepagina. `dist/quote-link.js` valideert dienst- en 3D-voorkeuren bij het meenemen via de URL. Naam, e-mail en telefoonnummer worden niet tussen pagina’s doorgegeven of opgeslagen. Oude links naar secties op de startpagina leiden naar de overeenkomstige nieuwe pagina.
+De Node-server serveert `dist/` en de beheer-API. Python is niet nodig in de draaiende container. `dist/pages.css` verzorgt de pagina-intro’s en overzichten. `dist/app.js` initialiseert het formulier alleen op de offertepagina. `dist/quote-link.js` valideert dienst- en 3D-voorkeuren bij het meenemen via de URL. Naam, e-mail en telefoonnummer worden niet tussen pagina’s doorgegeven. Een verstuurde aanvraag wordt via de backend in MySQL opgeslagen. Oude links naar secties op de startpagina leiden naar de overeenkomstige nieuwe pagina.
 
 De volledige versie vóór de overstap naar aparte pagina’s is bewaard op `backup/voor-aparte-paginas-20261025`. De canonieke pagina-adressen en sitemap verwijzen naar het inmiddels bereikbare productiedomein https://www.schildersbedrijfklement.nl/.

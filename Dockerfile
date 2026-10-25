@@ -1,5 +1,10 @@
-FROM caddy:2-alpine
-COPY Caddyfile /etc/caddy/Caddyfile
-COPY dist/ /srv/
+FROM node:24-bookworm-slim
+ENV NODE_ENV=production
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY --chown=node:node dist/ ./dist/
+COPY --chown=node:node server/ ./server/
+USER node
 EXPOSE 3000
-CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+CMD ["node", "server/index.js"]
