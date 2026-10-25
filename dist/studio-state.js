@@ -12,7 +12,7 @@ export function studioChoice(state) {
   const label = target === 'ceiling' ? 'Plafond stucen en afwerken' : studioScenes[state.scene].label;
   const suffix = target === 'frames' ? ' · ' + (state.finish === 'gloss' ? 'hoogglans' : 'zijdeglans') : target === 'walls' ? ' · ' + (state.wall === 'accent' ? 'accentwand' : 'beide wanden') : '';
   const texture = state.scene === 'plaster' ? ' · ' + (state.texture === 'fine' ? 'fijne structuur' : 'glad') : '';
-  return { code: state.paint.code, value: state.paint.hex, name: label + suffix + texture + ' — ' + state.paint.code + ' · ' + state.paint.name, service: studioScenes[state.scene].service, target };
+  return { code: state.paint.code, value: state.paint.hex, name: label + suffix + texture + ' — ' + state.paint.code + ' · ' + state.paint.name, service: studioScenes[state.scene].service, target, scene: state.scene, surface: state.surface, wall: state.wall, finish: state.finish, texture: state.texture };
 }
 export function comparisonSplit(value, width) {
   const after = Math.max(0, Math.min(100, Number(value) || 0));

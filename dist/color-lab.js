@@ -1,6 +1,6 @@
 import { paintColors } from './paint-data.js';
 import { resolvePaint, paintFromRgb, rgbChannels } from './paint-resolver.js';
-import { studioScenes, studioTarget, studioChoice, studioDetail } from './studio-state.js?v=details-20261025';
+import { studioScenes, studioTarget, studioChoice, studioDetail } from './studio-state.js?v=paginas-20261025';
 
 const palette = document.querySelector('#paint-palette');
 const input = document.querySelector('#paint-code');
@@ -16,6 +16,7 @@ function paintLabel(paint) { return paint.code + ' · ' + paint.name; }
 function announceColor() {
   document.dispatchEvent(new CustomEvent('klement-color-change', { detail: studioChoice(state) }));
 }
+document.addEventListener('klement-color-request', announceColor);
 function populateFields() {
   input.value = state.paint.source ? state.paint.code : '';
   document.querySelector('#hex-code').value = state.paint.hex;

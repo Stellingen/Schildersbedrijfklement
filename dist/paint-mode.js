@@ -1,5 +1,5 @@
 import * as THREE from './assets/three.module.js';
-import { studioTarget } from './studio-state.js?v=details-20261025';
+import { studioTarget } from './studio-state.js?v=paginas-20261025';
 
 export function createPaintMode(model) {
   const exactBack = new THREE.MeshBasicMaterial({ toneMapped: false });

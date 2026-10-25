@@ -1,4 +1,5 @@
 import { nextServiceSelection } from './quote-selection.js';
+import { quoteURL, quotePreference } from './quote-link.js?v=paginas-20261025';
 'use strict';
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -44,7 +45,7 @@ $$('.service-card').forEach(card => card.addEventListener('click', () => {
   const service = serviceData[activeService];
   $('#dialog-title').textContent = service.name;
   $('#dialog-description').textContent = service.description;
-  $('#dialog-image').src = 'assets/' + service.image;
+  $('#dialog-image').src = '/assets/' + service.image;
   $('#dialog-image').alt = $('img', card).alt;
   $('#dialog-points').replaceChildren(...service.points.map(point => {
     const item = document.createElement('li');
@@ -66,37 +67,31 @@ const privacyDialog = $('#privacy-dialog');
 privacyDialog.setAttribute('aria-label', 'Privacy bij uw aanvraag');
 $$('.privacy-trigger').forEach(button => button.addEventListener('click', () => privacyDialog.showModal()));
 
-// The 3D colour tool shares only the explicitly selected, verified code.
-let selectedColor = { name: 'RAL 9010 · Zuiver wit', value: '#F0EFE5', code: 'RAL 9010' };
-let enquiryColor = null;
+// Keep the old one-page bookmarks useful after the move to separate pages.
+const oldSections = { '#diensten':'/diensten/', '#projecten':'/projecten/', '#over':'/over-klement/', '#kleur':'/kleurstudio/', '#werkwijze':'/werkwijze/', '#offerte':'/offerte/', '#contact':'/contact/', '#bedrijfsgegevens':'/contact/#bedrijfsgegevens', '#reviews':'/over-klement/#reviews' };
+if (document.body.dataset.page === 'home' && oldSections[location.hash]) location.replace(oldSections[location.hash]);
+let selectedColor = null;
 document.addEventListener('klement-color-change', event => { selectedColor = { ...event.detail }; });
-function renderColor() {
-  const badge = $('#chosen-color');
-  badge.hidden = !enquiryColor;
-  if (enquiryColor) {
-    $('strong', badge).textContent = enquiryColor.name;
-    $('span', badge).style.background = enquiryColor.value;
-  }
+document.dispatchEvent(new CustomEvent('klement-color-request'));
+let quoteController = null;
+function requestQuote(service, color = null) {
+  if (quoteController) quoteController.start(service, color);
+  else window.location.assign(quoteURL(service, color));
 }
-$('#use-color').addEventListener('click', () => {
-  enquiryColor = { ...selectedColor };
-  if (selectedColor.service) selectService(selectedColor.service);
-  renderColor();
-  showStep(0, false);
-  $('#offerte').scrollIntoView({ behavior: reducedMotion() ? 'instant' : 'smooth' });
-});
-$('#remove-color').addEventListener('click', () => {
-  enquiryColor = null;
-  renderColor();
-});
-$$('.quick-choice[data-quote]').forEach(button => button.addEventListener('click', () => {
-  selectService(button.dataset.quote);
-  showStep(0, false);
-  $('#offerte').scrollIntoView({ behavior: reducedMotion() ? 'instant' : 'smooth' });
-}));
+$('#use-color')?.addEventListener('click', () => { if (selectedColor) requestQuote(selectedColor.service, selectedColor); });
+$$('.quick-choice[data-quote]').forEach(button => button.addEventListener('click', () => requestQuote(button.dataset.quote)));
+$('#dialog-quote').addEventListener('click', () => { serviceDialog.close(); requestQuote(activeService); });
 
+function initialiseQuote() {
 // Four-step enquiry. No personal data is stored or submitted by the website.
 const form = $('#quote-form');
+if (!form) return null;
+let enquiryColor = null;
+function renderColor() {
+  const badge = $('#chosen-color'); badge.hidden = !enquiryColor;
+  if (enquiryColor) { $('strong', badge).textContent = enquiryColor.name; $('span', badge).style.background = enquiryColor.value; }
+}
+$('#remove-color').addEventListener('click', () => { enquiryColor = null; renderColor(); });
 const steps = $$('.form-step');
 let currentStep = 0;
 let enquiryText = '';
@@ -209,12 +204,6 @@ form.addEventListener('submit', event => {
 $('#previous').addEventListener('click', () => showStep(Math.max(0, currentStep - 1)));
 form.addEventListener('input', hideError);
 form.addEventListener('change', hideError);
-$('#dialog-quote').addEventListener('click', () => {
-  selectService(activeService);
-  serviceDialog.close();
-  showStep(0, false);
-  $('#offerte').scrollIntoView({ behavior: reducedMotion() ? 'instant' : 'smooth' });
-});
 $('.copy-request').addEventListener('click', async () => {
   updateSummary();
   const status = $('#send-status');
@@ -234,6 +223,18 @@ $('.copy-request').addEventListener('click', async () => {
   }
   status.hidden = false;
 });
+
+const preference = quotePreference(location.search);
+if (preference.service) selectService(preference.service);
+if (preference.choice) { enquiryColor = preference.choice; renderColor(); }
+return { start(service, color) {
+  if (serviceData[service]) selectService(service);
+  if (color) enquiryColor = { ...color };
+  renderColor(); showStep(0, false);
+  $('#offerte').scrollIntoView({ behavior: reducedMotion() ? 'instant' : 'smooth' });
+}};
+}
+quoteController = initialiseQuote();
 
 $$('.faq details').forEach(detail => detail.addEventListener('toggle', () => {
   if (detail.open) $$('.faq details').forEach(other => { if (other !== detail) other.open = false; });

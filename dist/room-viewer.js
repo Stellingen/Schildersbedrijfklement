@@ -3,7 +3,7 @@ import { OrbitControls } from './assets/OrbitControls.js';
 import { createRoomModel } from './room-model.js?v=details-20261025';
 import { createPaintMode } from './paint-mode.js?v=details-20261025';
 
-import { studioTarget, studioView, comparisonSplit } from './studio-state.js?v=details-20261025';
+import { studioTarget, studioView, comparisonSplit } from './studio-state.js?v=paginas-20261025';
 
 function makeTexture(kind) {
   const canvas = document.createElement('canvas');

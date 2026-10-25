@@ -95,3 +95,18 @@ De bedrijfssectie en footer vermelden KvK 87316374, handelsnaam Klussenbedrijf K
 ## Werkgebied
 
 Op verzoek van de eigenaar is het werkgebied beperkt tot Twente. Dit is doorgevoerd in alle paginacontent, de offertehulp, metadata en JSON-LD. Het juiste openbare btw-id moet nog worden aangeleverd; er is geen nummer geschat of afgeleid van andere bedrijfsnummers.
+
+
+## Paginastructuur
+
+De website heeft aparte statische pagina’s: `/`, `/diensten/`, `/projecten/`, `/over-klement/`, `/kleurstudio/`, `/werkwijze/`, `/offerte/`, `/contact/` en `/privacy/`. De decoratieve nummering op secties, diensten, 3D-keuzes en werkwijze is verwijderd. De functionele voortgang in het offerteformulier en de fotogalerij blijft beschikbaar.
+
+De gedeelde content en vensters staan in `src/site.html`. Pagina-intro’s, navigatie en de selectie van secties staan in `scripts/build_pages.py`. Genereer na wijzigingen de pagina’s opnieuw met:
+
+```sh
+python3 scripts/build_pages.py
+```
+
+Railway blijft uitsluitend `dist/` serveren; Python is niet nodig in de draaiende container. `dist/pages.css` verzorgt de pagina-intro’s en overzichten. `dist/app.js` initialiseert het formulier alleen op de offertepagina. `dist/quote-link.js` valideert dienst- en 3D-voorkeuren bij het meenemen via de URL. Naam, e-mail en telefoonnummer worden niet tussen pagina’s doorgegeven of opgeslagen. Oude links naar secties op de startpagina leiden naar de overeenkomstige nieuwe pagina.
+
+De volledige versie vóór de overstap naar aparte pagina’s is bewaard op `backup/voor-aparte-paginas-20261025`. De canonieke pagina-adressen en sitemap verwijzen naar het inmiddels bereikbare productiedomein https://www.schildersbedrijfklement.nl/.

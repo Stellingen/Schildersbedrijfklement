@@ -20,7 +20,7 @@ function showPhoto(index) {
     preload.src = photos[(position + offset + photos.length) % photos.length].src;
   }
 }
-function openGallery(album) {
+function openGallery(album, photoId) {
   photos = photosForAlbum(album);
   if (!photos.length) return;
   document.querySelector('#gallery-title').textContent = album === 'dark' ? 'Donkere kozijnen & houtwerk' : album === 'white' ? 'Wit buitenschilderwerk' : 'Onze projectgalerij';
@@ -35,10 +35,11 @@ function openGallery(album) {
     button.addEventListener('click', () => showPhoto(index));
     return button;
   }));
-  showPhoto(album === 'all' ? photos.length - 1 : 0);
+  const requested = photos.findIndex(photo => photo.id === photoId);
+  showPhoto(requested >= 0 ? requested : album === 'all' ? photos.length - 1 : 0);
   dialog.showModal();
 }
-document.querySelectorAll('[data-gallery]').forEach(button => button.addEventListener('click', () => openGallery(button.dataset.gallery)));
+document.querySelectorAll('[data-gallery]').forEach(button => button.addEventListener('click', () => openGallery(button.dataset.gallery, button.dataset.photo)));
 document.querySelector('#gallery-prev').addEventListener('click', () => showPhoto(position - 1));
 document.querySelector('#gallery-next').addEventListener('click', () => showPhoto(position + 1));
 dialog.addEventListener('keydown', event => {
@@ -57,5 +58,5 @@ image.addEventListener('touchend', event => {
 }, { passive: true });
 document.querySelector('#gallery-enquiry').addEventListener('click', () => {
   dialog.close();
-  document.querySelector('#offerte').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+  window.location.assign('/offerte/?dienst=buiten');
 });
