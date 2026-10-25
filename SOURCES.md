@@ -68,3 +68,8 @@ De 3D-kamer, meubels, kozijnonderdelen, plafondgeometrie en de procedurele struc
 - De oude website zet bij het label btw-nummer een waarde in IBAN-formaat. Dat is geen Nederlands btw-id en is niet overgenomen, ook niet als bankrekening. Er is geen betrouwbaar gepubliceerd btw-id gevonden. Het juiste openbare btw-identificatienummer moet door de eigenaar worden aangeleverd. Zie voor de opbouw de Belastingdienst: https://www.belastingdienst.nl/wps/wcm/connect/nl/btw/content/btw-identificatienummer-en-omzetbelastingnummer.
 - Werkgebied Overijssel/Twente en de zes diensten zijn gebaseerd op de oorspronkelijke website. Contact en e-mail volgen de expliciete instructies van de eigenaar. Adres en openingstijden zijn niet overgenomen: de oorspronkelijke contactpagina noemt Enschede, terwijl gidsen Hengelo vermelden. Zonder bevestiging is geen bezoekadres of vast tijdschema gepubliceerd.
 - De bedrijfsgegevens staan zichtbaar op de pagina en in lokaal opgenomen JSON-LD. Er zijn geen btw-tarieven, keurmerken, verzekeringen, garantietermijnen, aantallen klanten of jaren ervaring toegevoegd.
+
+
+## Aanpassing werkgebied
+
+De eigenaar heeft het werkgebied expliciet beperkt tot Twente. Deze instructie vervangt de ruimere regiovermeldingen uit de oorspronkelijke website. De huidige website en gestructureerde gegevens vermelden daarom uitsluitend Twente. Het juiste btw-id is nog niet aangeleverd.

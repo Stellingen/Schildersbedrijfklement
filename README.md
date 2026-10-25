@@ -90,3 +90,8 @@ De studio bevat een echte raamopening met getrapte kozijnprofielen, aparte glasv
 ## Bedrijfsgegevens
 
 De bedrijfssectie en footer vermelden KvK 87316374, handelsnaam Klussenbedrijf Klement, actuele contactgegevens, diensten en werkgebied. Dezelfde gecontroleerde gegevens staan in JSON-LD. Het juiste openbare btw-id ontbreekt nog; de oude website vermeldt bij dat label een IBAN en dat is bewust niet gekopieerd. Na aanlevering van het correcte btw-id kan dit aan de bedrijfssectie en JSON-LD worden toegevoegd. Het adres en openingstijden wachten op bevestiging wegens tegenstrijdige openbare vermeldingen. Bronnen en afwegingen staan in SOURCES.md.
+
+
+## Werkgebied
+
+Op verzoek van de eigenaar is het werkgebied beperkt tot Twente. Dit is doorgevoerd in alle paginacontent, de offertehulp, metadata en JSON-LD. Het juiste openbare btw-id moet nog worden aangeleverd; er is geen nummer geschat of afgeleid van andere bedrijfsnummers.
