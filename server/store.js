@@ -75,11 +75,11 @@ export function createStore(env=process.env) {
   async function stats(days){
     const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     const since=new Date(new Date(today+'T12:00:00Z').getTime()-(days-1)*86400000).toISOString().slice(0,10);
-    const daily=await all('SELECT CAST(day AS CHAR) AS day, COUNT(*) AS views,COUNT(DISTINCT visitor) AS visitors FROM page_views WHERE day>=? GROUP BY day ORDER BY day',[since]);
+    const daily=await all('SELECT CAST(day AS CHAR) AS day, COUNT(*) AS views,COUNT(DISTINCT visitor) AS visitors FROM page_views WHERE day>=? GROUP BY CAST(day AS CHAR) ORDER BY day',[since]);
     const pages=await all('SELECT path,COUNT(*) AS views FROM page_views WHERE day>=? GROUP BY path ORDER BY views DESC LIMIT 8',[since]);
     const sources=await all('SELECT source,COUNT(*) AS views FROM page_views WHERE day>=? GROUP BY source ORDER BY views DESC LIMIT 6',[since]);
     const devices=await all('SELECT device,COUNT(*) AS views FROM page_views WHERE day>=? GROUP BY device',[since]);
-    const requestDays=await all('SELECT CAST(DATE(created_at) AS CHAR) AS day,COUNT(*) AS count FROM enquiries WHERE created_at>=? GROUP BY DATE(created_at)',[since]);
+    const requestDays=await all('SELECT CAST(DATE(created_at) AS CHAR) AS day,COUNT(*) AS count FROM enquiries WHERE created_at>=? GROUP BY CAST(DATE(created_at) AS CHAR)',[since]);
     const [requests]=await all("SELECT COUNT(*) AS total,COALESCE(SUM(status='nieuw'),0) AS fresh,COALESCE(SUM(follow_up<=UTC_DATE() AND status NOT IN ('afgerond','archief')),0) AS followUps FROM enquiries");
     const [pictures]=await all('SELECT COUNT(*) AS total,COALESCE(SUM(bytes),0) AS bytes FROM media WHERE deleted_at IS NULL');
     const activity=await all('SELECT action,created_at FROM activity ORDER BY id DESC LIMIT 7');
