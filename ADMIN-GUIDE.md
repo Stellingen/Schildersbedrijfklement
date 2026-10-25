@@ -87,3 +87,7 @@ De volledige website vóór het dashboard is bewaard op GitHub-branch `backup/vo
 Referenties: [Railway MySQL](https://docs.railway.com/databases/mysql), [mysql2](https://sidorares.github.io/node-mysql2/docs), [Nodemailer SMTP](https://nodemailer.com/smtp), [Sharp](https://sharp.pixelplumbing.com/).
 
 De versie vóór de dashboardvernieuwing is bewaard op branch `backup/voor-dashboard-vernieuwing-20261026`. Deze release voegt drie leadvelden toe en maakt contacttoestemming optioneel voor handmatige leads. Bestaande gegevens, accounts en foto’s blijven bewaard.
+
+## Teksten direct op de website wijzigen
+
+Open **Website bewerken** na het inloggen. Teksten in de hoofdinhoud zijn subtiel gemarkeerd. Klik op een tekst, pas hem aan en bekijk het live voorbeeld. **Opslaan op website** publiceert direct en bewaart de tekst in MySQL. De bestaande opmaak, afbeeldingen en links blijven behouden. Met **Tekst bewerken: uit** kunt u links normaal gebruiken. Annuleren bewaart niets; de knop voor ongedaan maken herstelt de tekst van vóór de huidige bewerking. Wijzigingen worden per pagina opgeslagen. Automatische galerijteksten en interactieve formulieren blijven via hun eigen beheer werken. Bij een gelijktijdige wijziging wordt opslaan geweigerd: herlaad dan de pagina.

@@ -1,3 +1,4 @@
+import {copyRoutes,renderCopy} from './copy.js';
 import {leadSources,priorities,leadDetails,manualLead} from './leads.js';
 import express from 'express';
 import path from 'node:path';
@@ -237,11 +238,13 @@ export function createApp({store,env=process.env}={}){
     await store.run('DELETE FROM sessions WHERE username=? AND token_hash<>?',[req.admin.username,req.admin.token_hash]);
     await store.audit('Beheerwachtwoord gewijzigd');res.json({ok:true});
   }));
+  copyRoutes(app,store,wrap);
   app.use('/api',(_req,_res,next)=>next(new HttpError(404,'Niet gevonden.')));
   // Photo changes also apply to the delivered HTML, before JavaScript runs.
   app.get([...publicPaths],wrap(async(req,res,next)=>{
-    if(!store?.isReady)return next();
+    if(!store)return next();
     try{
+      await store.ensure();
       const content=await store.content();
       let html=await readFile(path.join(root,req.path,'index.html'),'utf8');
       html=html.replace(/<img\b[^>]*data-media-slot="([^"]+)"[^>]*>/g,(tag,key)=>{
@@ -251,6 +254,7 @@ export function createApp({store,env=process.env}={}){
       });
       const gallery=content.media.filter(m=>m.gallery);
       html=html.replace(/<div class="photo-contact-sheet">[\s\S]*?<\/div>/,()=>'<div class="photo-contact-sheet">'+gallery.map(m=>`<button class="photo-detail" data-gallery="all" data-photo="${escapeHtml(m.photoId)}"><span><img src="${escapeHtml(m.src)}" alt="${escapeHtml(m.alt)}" loading="lazy" width="600" height="450"></span><strong>${escapeHtml(m.title)}</strong></button>`).join('')+'</div>');
+      html=await renderCopy(html,req.path,store);
       res.set('Cache-Control','no-cache').type('html').send(html);
     }catch{next();}
   }));

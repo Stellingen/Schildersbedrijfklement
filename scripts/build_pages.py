@@ -118,3 +118,7 @@ for key,page in pages.items():
 (DIST/'sitemap.xml').write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+''.join('<url><loc>'+PRODUCTION+page['path']+'</loc></url>' for page in pages.values())+'</urlset>\n')
 (DIST/'robots.txt').write_text('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /dash\nDisallow: /api/\nSitemap: '+PRODUCTION+'/sitemap.xml\n')
 print('Built',len(pages),'static pages:',', '.join(page['path'] for page in pages.values()))
+
+# Keep website text editing identities current after generating pages.
+import runpy
+runpy.run_path(str(Path(__file__).resolve().parent / 'prepare_copy.py'))

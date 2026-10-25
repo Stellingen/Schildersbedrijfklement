@@ -55,3 +55,13 @@ test('Photo placement can fill an empty slot and publish a chosen draft without 
 test('Unauthenticated dashboard shows login and supports password visibility',async t=>{
  const f=domFixture(false);t.after(()=>f.dom.window.close());await f.run();const d=f.w.document;assert.equal(d.querySelector('#login').hidden,false);assert.equal(d.querySelector('#dashboard').hidden,true);d.querySelector('#show-password').click();assert.equal(d.querySelector('#login-form [name=password]').type,'text');d.querySelector('#show-password').click();assert.equal(d.querySelector('#login-form [name=password]').type,'password');
 });
+
+test('Inline text editor previews safely, saves the selected text and lets links work when disabled',async t=>{
+ const dom=new JSDOM('<main><h1><site-copy data-copy="abc">Welkom</site-copy></h1><a href="/contact/"><site-copy data-copy="def">Contact</site-copy></a></main><div id="bar"><button>Klaar</button></div>',{url:'https://www.schildersbedrijfklement.nl/',runScripts:'outside-only'});t.after(()=>dom.window.close());const w=dom.window,d=w.document;
+ w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};w.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open');};
+ const source=(await readFile(new URL('../dist/text-editor.js',import.meta.url),'utf8')).replace('export function','function');const calls=[];w.testApi=async(url,options)=>{calls.push({url,body:JSON.parse(options.body)});return {value:JSON.parse(options.body).value};};
+ w.eval(source+';enableTextEditing({api:window.testApi,bar:document.querySelector("#bar")});');
+ d.querySelector('site-copy').click();assert.ok(d.querySelector('dialog').open);const input=d.querySelector('textarea');input.value='<img src=x onerror=alert(1)>';input.dispatchEvent(new w.Event('input'));assert.equal(d.querySelector('.k-text-preview img'),null);assert.match(d.querySelector('.k-text-preview p').textContent,/<img/);
+ d.querySelector('form').dispatchEvent(new w.Event('submit',{cancelable:true}));await pause();assert.equal(calls[0].body.expected,'Welkom');assert.equal(calls[0].body.page,'/');assert.equal(d.querySelector('h1 site-copy').textContent,input.value);assert.equal(d.querySelector('h1 img'),null);assert.equal(d.querySelector('dialog').open,false);
+ d.querySelector('#bar [aria-pressed]').click();assert.equal(d.querySelector('site-copy').hasAttribute('role'),false);
+});

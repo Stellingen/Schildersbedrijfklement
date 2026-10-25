@@ -128,6 +128,17 @@ test('MySQL API integration: protected admin, durable enquiries, statistics and 
    await store.pool.query('ALTER TABLE enquiries DROP COLUMN lead_source, DROP COLUMN priority, DROP COLUMN estimated_value, MODIFY consent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
    const second=createStore(env);try{await second.ensure();const rows=await second.listRequests();assert.equal(rows.total,2);assert.equal(rows.items[0].priority,'normaal');assert.equal((await second.content()).slots['hero-main'],photoId);assert.equal((await call('/api/auth/session',{auth:true})).data.authenticated,true);}finally{await second.close();}
  });
+ await t.test('Website text editing persists safely, rejects conflicts and protects all edits',async()=>{
+   const {copyDefaults}=await import('../server/copy.js');const [id,expected]=Object.entries(copyDefaults['/'])[0];const body={page:'/',id,expected,value:'Nieuwe tekst <script>alert(1)</script>'};
+   assert.equal((await call('/api/admin/copy',{method:'PATCH',body})).status,401);
+   assert.equal((await call('/api/admin/copy',{method:'PATCH',auth:true,csrfOverride:'bad',body})).status,403);
+   assert.equal((await call('/api/admin/copy',{method:'PATCH',auth:true,body:{...body,id:'unknown'}})).status,400);
+   assert.equal((await call('/api/admin/copy',{method:'PATCH',auth:true,body})).status,200);
+   const page=await call('/');assert.ok(page.data.includes('Nieuwe tekst &lt;script&gt;alert(1)&lt;/script&gt;'));assert.ok(!page.data.includes('<script>alert(1)</script>'));
+   assert.equal((await call('/api/admin/copy',{method:'PATCH',auth:true,body})).status,409);
+   const second=createStore(env);try{await second.ensure();const rows=await second.all('SELECT value FROM settings WHERE setting_key=?',['copy:/:'+id]);assert.equal(rows[0].value,body.value);}finally{await second.close();}
+   assert.equal((await call('/api/admin/copy',{method:'PATCH',auth:true,body:{...body,expected:body.value,value:expected}})).status,200);
+ });
  await t.test('Password can be changed and logout revokes the session',async()=>{
    const next=randomBytes(16).toString('hex');assert.equal((await call('/api/admin/password',{method:'POST',auth:true,body:{current:password,password:next}})).status,200);
    assert.equal((await call('/api/admin/logout',{method:'POST',auth:true})).status,200);

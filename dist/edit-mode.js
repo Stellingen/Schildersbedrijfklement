@@ -1,13 +1,15 @@
 import {createPhotoPicker} from './admin/photo-picker.js';
 import {siteContent} from './content.js';
+import {enableTextEditing} from './text-editor.js';
 const response=await fetch('/api/auth/session',{credentials:'same-origin',cache:'no-store'});const session=await response.json();
 if(session.authenticated){
  const css=document.createElement('link');css.rel='stylesheet';css.href='/edit-mode.css';document.head.append(css);
  const api=async(url,options={})=>{const r=await fetch(url,{credentials:'same-origin',...options,headers:{...(options.body?{'Content-Type':'application/json'}:{}),'X-CSRF-Token':session.csrf}});const d=await r.json();if(!r.ok)throw new Error(d.error||'De wijziging kon niet worden opgeslagen.');return d;};
  const picker=createPhotoPicker({api,onSaved(){location.reload();}});
- const bar=document.createElement('div');bar.className='k-edit-bar';bar.innerHTML='<strong>Website bewerken</strong><span>Klik op een blauwe fotoknop om de foto direct te wijzigen.</span><a href="/admin/#fotos">Naar dashboard ↗</a><button type="button">Klaar met bewerken ✓</button>';document.body.append(bar);
+ const bar=document.createElement('div');bar.className='k-edit-bar';bar.innerHTML='<strong>Website bewerken</strong><span>Kies een foto of klik op een tekst om die te wijzigen.</span><a href="/admin/#fotos">Naar dashboard ↗</a><button type="button">Klaar met bewerken ✓</button>';document.body.append(bar);
  bar.querySelector('button').addEventListener('click',()=>{const url=new URL(location.href);url.searchParams.delete('bewerken');location.assign(url.pathname+url.search+url.hash);});
  document.querySelectorAll('a[href]').forEach(a=>{const raw=a.getAttribute('href');if(raw?.startsWith('/')&&!raw.startsWith('/admin')){const url=new URL(raw,location.origin);url.searchParams.set('bewerken','1');a.href=url.pathname+url.search+url.hash;}});
+ enableTextEditing({api,bar});
  const markers=[];
  function marker(image,label,action){
   const button=document.createElement('button');button.type='button';button.className='k-edit-pin';button.textContent='✎ '+label;button.setAttribute('aria-label',label+' wijzigen');
