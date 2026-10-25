@@ -246,3 +246,7 @@ $('#year').textContent = new Date().getFullYear();
 document.querySelector('.privacy-company-link')?.addEventListener('click', () => {
   document.querySelector('#privacy-dialog').close();
 });
+
+// Activate complex page controls once shared handlers are installed.
+document.body.dataset.appReady = 'true';
+document.dispatchEvent(new CustomEvent('klement-page-ready'));

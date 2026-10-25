@@ -218,3 +218,8 @@ document.querySelector('#room-right').addEventListener('click', () => room?.orbi
 document.querySelector('#room-zoom-in').addEventListener('click', () => room?.zoom(0.88));
 document.querySelector('#room-zoom-out').addEventListener('click', () => room?.zoom(1.13));
 switchMode('ral'); applyPaint(state.paint); updateStudioLabels(); setComparison(50);
+
+const setup = document.querySelector('#studio-setup');
+function enableStudio() { if (setup && document.body.dataset.appReady === 'true') setup.disabled = false; }
+document.addEventListener('klement-page-ready', enableStudio);
+enableStudio();
