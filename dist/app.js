@@ -279,3 +279,6 @@ document.querySelector('.privacy-company-link')?.addEventListener('click', () =>
 // Activate complex page controls once shared handlers are installed.
 document.body.dataset.appReady = 'true';
 document.dispatchEvent(new CustomEvent('klement-page-ready'));
+
+// Authenticated owners can edit photos on the actual website. No credentials travel in the URL.
+if(new URLSearchParams(location.search).get('bewerken')==='1') import('./edit-mode.js').catch(()=>{});

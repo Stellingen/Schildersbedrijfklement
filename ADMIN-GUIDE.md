@@ -40,12 +40,15 @@ Bij een storing blijft de aanvraag in het dashboard beschikbaar. Het dashboard t
 
 ## Dagelijks gebruik
 
-- **Overzicht:** kies 7, 30 of 90 dagen. Bekijk geschatte bezoekers, paginaweergaven, ontvangen aanvragen, populaire pagina’s, verwijzende websites en het type apparaat. De cijfers worden elke minuut vernieuwd zolang dit scherm actief is.
-- **Aanvragen:** zoek op naam, e-mail, plaats of referentie, filter op status en open een aanvraag. Bekijk de werkzaamheden, planning, woningtype, toelichting en de volledige 3D-keuze. Corrigeer contactgegevens, voeg een interne notitie en opvolgdatum toe en wijzig de status. Download indien nodig een CSV-overzicht van maximaal 10.000 aanvragen.
-- **Foto’s & plaatsing:** voeg JPG, PNG of WebP toe, maximaal 6 MB per bestand. Nieuwe foto’s zijn concepten. Vul titel, bijschrift en toegankelijke beschrijving in, kies het album en de volgorde, en vink de gewenste plekken aan. Zet **Zichtbaar op de website** aan en sla op. Per vaste plek kan één foto staan; het vervangen van een foto verwijdert de vorige foto niet uit het beheer.
-- **Projectgalerij:** vink **Opnemen in de projectgalerij** aan. Het album bepaalt of de foto ook onder donkere of witte kozijnen verschijnt. Foto’s bij Overig werk zijn via de volledige galerij en het foto-overzicht bereikbaar.
-- **Prullenbak:** een verwijderde foto verdwijnt van de ingestelde plekken en uit de galerij. Herstellen maakt de foto weer beschikbaar als concept; publiceer en plaats deze opnieuw waar gewenst. De meegeleverde originele bestanden blijven als bron in de repository bewaard. Geüploade foto’s blijven voor herstel in MySQL bewaard.
-- **Instellingen:** controleer de database- en mailverbinding en wijzig het beheerwachtwoord. Nieuwe wachtwoorden via dit scherm moeten minimaal 12 tekens bevatten.
+- **Overzicht:** klik op een statistiek of een fase in de voortgang om door te gaan. Wissel in de grafiek tussen bezoekers, paginaweergaven en leads. Klik op een dag of gebruik de pijltjestoetsen. De tabel biedt dezelfde cijfers. Opvolgdatums en de geschatte waarde van open leads helpen bij de planning. De cijfers vernieuwen elke minuut zolang dit scherm actief is.
+- **Leads & aanvragen:** websiteaanvragen verschijnen automatisch. Gebruik het bord om kaarten te verslepen of kies een status onder de kaart. Er zijn statussen voor nieuw, in contact, offerte verstuurd, ingepland, afgerond, niet doorgegaan en archief. De lijstweergave biedt paginering; het bord toont maximaal 100 resultaten. Zoek en filter op status en prioriteit. Voeg via **Lead toevoegen** ook een telefoontje, e-mail of aanbeveling toe. Vul minimaal telefoon of e-mail in.
+- **Lead bekijken:** open een kaart voor de klantgegevens, werkzaamheden, planning, toelichting en 3D-keuzes. Houd contactgegevens, herkomst, prioriteit, geschatte kluswaarde, interne notities en opvolgdatum bij. De waarde is een eigen schatting, geen omzetmeting. Bij handmatige leads wordt geen websiteformulier-toestemming verzonnen. CSV-export bevat maximaal 10.000 leads.
+- **Foto’s op uw website:** elke kaart toont een vaste plek met de actuele foto, zoals de grote hoofdfoto, een dienst of een projectalbum. Klik **Foto wijzigen** of **Foto kiezen**. Kies uit de bibliotheek of upload JPG, PNG of WebP van maximaal 6 MB. Vergelijk de huidige en nieuwe foto en klik **Publiceer op deze plek**. Alleen de gekozen plek verandert; de vorige foto blijft bewaard. Een projectalbumfoto wordt ook aan dat album toegevoegd.
+- **Bewerk op de website:** log in en open **Website bewerken**, of ga naar `/?bewerken=1`. Blauwe fotoknoppen openen dezelfde fotokeuze op de werkelijke plek. Bij losse galerijfoto’s vervangt u de afbeelding overal waar deze foto wordt gebruikt. Met **Klaar met bewerken** sluit u de bewerkstand. Bezoekers zonder beheersessie zien de gewone website.
+- **Fotobibliotheek:** beheer titel, bijschrift, beschrijving, album, volgorde, zichtbaarheid en meerdere plaatsingen. **Afbeelding overal vervangen** bewaart de titel, het foto-ID en alle plaatsingen. Nieuwe losse uploads beginnen als concept; vink de plekken en **Zichtbaar op de website** aan om ze te publiceren.
+- **Projectgalerij:** vink **Opnemen in de projectgalerij** aan. Het album bepaalt of de foto onder donkere of witte kozijnen verschijnt. Overig werk is via de volledige galerij bereikbaar.
+- **Prullenbak:** een verwijderde foto verdwijnt van de vaste plekken en uit de galerij. Herstellen maakt de foto beschikbaar als concept; publiceer en plaats deze opnieuw. Geüploade foto’s blijven voor herstel in MySQL bewaard.
+- **Instellingen:** controleer database en e-mail en wijzig het beheerwachtwoord. Nieuwe wachtwoorden via dit scherm moeten minimaal 12 tekens bevatten. E-mailmeldingen vereisen een afzonderlijke SMTP-koppeling; opslaan en opvolgen van leads werkt ook zonder.
 
 ## Wat bezoekersstatistieken betekenen
 
@@ -53,7 +56,7 @@ De teller begint bij ingebruikname. Er worden geen oude of voorbeeldcijfers toeg
 
 De metingen bevatten alleen openbare paginapaden, de hostname van een externe verwijzer en een grof apparaattype. URL-zoekvragen, klantgegevens en dashboardbezoeken worden niet gemeten. Bekende bots worden gefilterd. Do Not Track en Global Privacy Control worden gerespecteerd waar ze worden doorgegeven. Browsers die de meting blokkeren worden niet geteld. Er worden geen trackingcookies of permanente browser-ID’s gezet.
 
-Statistieken worden na 90 dagen verwijderd; het activiteitenlog na 180 dagen. Opgeslagen aanvragen blijven beschikbaar voor de behandeling en opvolging. Rechtstreeks ontvangen e-mails en telefoongesprekken worden niet automatisch ingelezen.
+Statistieken worden na 90 dagen verwijderd; het activiteitenlog na 180 dagen. Opgeslagen aanvragen blijven beschikbaar voor de behandeling en opvolging. Rechtstreeks ontvangen e-mails en telefoongesprekken worden niet automatisch ingelezen; voeg ze zelf als lead toe.
 
 ## Opslag en onderhoud
 
@@ -82,3 +85,5 @@ De integratietest maakt een tijdelijke, willekeurig genoemde database en verwijd
 De volledige website vóór het dashboard is bewaard op GitHub-branch `backup/voor-beheerdashboard-20261025`. Terugzetten van die branch herstelt de vorige statische server. Dat verwijdert geen gegevens uit een afzonderlijk draaiende MySQL-service.
 
 Referenties: [Railway MySQL](https://docs.railway.com/databases/mysql), [mysql2](https://sidorares.github.io/node-mysql2/docs), [Nodemailer SMTP](https://nodemailer.com/smtp), [Sharp](https://sharp.pixelplumbing.com/).
+
+De versie vóór de dashboardvernieuwing is bewaard op branch `backup/voor-dashboard-vernieuwing-20261026`. Deze release voegt drie leadvelden toe en maakt contacttoestemming optioneel voor handmatige leads. Bestaande gegevens, accounts en foto’s blijven bewaard.

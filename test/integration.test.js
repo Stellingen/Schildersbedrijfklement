@@ -84,6 +84,50 @@ test('MySQL API integration: protected admin, durable enquiries, statistics and 
    const second=createStore(env);await second.ensure();assert.equal((await second.content()).slots['hero-main'],null);assert.equal((await second.listRequests()).total,1);await second.close();
    const auth=await call('/api/auth/session',{auth:true});assert.equal(auth.data.authenticated,true);
  });
+ await t.test('Manual leads preserve phone-only contacts, source, value and priorities without inventing consent',async()=>{
+   const body={name:'Telefonische klant',phone:'0612345678',leadSource:'telefoon',priority:'hoog',estimatedValue:'1234.56',description:'Kozijnen schilderen',services:['buiten']};
+   assert.equal((await call('/api/admin/enquiries',{method:'POST',body})).status,401);
+   assert.equal((await call('/api/admin/enquiries',{method:'POST',auth:true,csrfOverride:'wrong',body})).status,403);
+   const added=await call('/api/admin/enquiries',{method:'POST',auth:true,body});assert.equal(added.status,201);
+   const path='/api/admin/enquiries/'+added.data.id;
+   const lead=(await call(path,{auth:true})).data;assert.equal(lead.email,'');assert.equal(lead.consent_at,null);assert.equal(lead.lead_source,'telefoon');assert.equal(lead.priority,'hoog');assert.equal(Number(lead.estimated_value),1234.56);
+   assert.equal((await call('/api/admin/enquiries?priority=hoog&source=telefoon&view=board',{auth:true})).data.total,1);
+   assert.equal((await call(path+'/status',{method:'PATCH',auth:true,body:{status:'offerte'}})).status,200);
+   assert.equal((await call(path+'/status',{method:'PATCH',auth:true,body:{status:'invented'}})).status,400);
+   const saved=await call(path,{method:'PATCH',auth:true,body:{...body,status:'offerte',followUp:'2020-01-01',notes:'Offerte nabellen'}});assert.equal(saved.status,200);
+   const stats=(await call('/api/admin/stats',{auth:true})).data;assert.equal(Number(stats.requests.pipelineValue),1234.56);assert.equal(Number(stats.requests.followUps),1);assert.ok(stats.followUps.some(r=>r.id===added.data.id));assert.ok(stats.pipeline.some(p=>p.status==='offerte'&&Number(p.count)===1));
+   assert.equal((await call(path+'/status',{method:'PATCH',auth:true,body:{status:'verloren'}})).status,200);
+   const closed=(await call('/api/admin/stats',{auth:true})).data;assert.equal(Number(closed.requests.followUps),0);assert.equal(Number(closed.requests.pipelineValue),0);
+   assert.equal((await call('/api/admin/enquiries',{method:'POST',auth:true,body:{...body,phone:''}})).status,400);
+   assert.equal((await call('/api/admin/enquiries',{method:'POST',auth:true,body:{...body,estimatedValue:'1.234'}})).status,400);
+ });
+ await t.test('Slot selection publishes a draft, updates only the chosen spot and can fill an empty spot',async()=>{
+   const before=(await call('/api/content')).data;
+   assert.equal((await call('/api/admin/slots/hero-main',{method:'PATCH',auth:true,body:{mediaId:photoId}})).status,200);
+   const after=(await call('/api/content')).data;assert.equal(after.slots['hero-main'],photoId);assert.equal(after.slots['hero-detail'],before.slots['hero-detail']);assert.ok(after.media.some(m=>m.id===photoId));
+   assert.equal((await call('/api/admin/slots/project-dark',{method:'PATCH',auth:true,body:{mediaId:photoId}})).status,200);
+   const project=(await call('/api/content')).data.media.find(m=>m.id===photoId);assert.equal(project.album,'dark');assert.equal(project.gallery,true);
+   assert.equal((await call('/api/admin/slots/not-a-slot',{method:'PATCH',auth:true,body:{mediaId:photoId}})).status,400);
+   assert.equal((await call('/api/admin/slots/hero-main',{method:'PATCH',auth:true,body:{mediaId:'missing'}})).status,404);
+ });
+ await t.test('Replacing an active image preserves every placement and changes cache validators',async()=>{
+   const before=await fetch(base+'/media/'+photoId+'.webp'),etag=before.headers.get('etag');
+   const content=(await call('/api/content')).data,metadata=content.media.find(m=>m.id===photoId);
+   const image=await sharp({create:{width:50,height:40,channels:3,background:'#ff0011'}}).png().toBuffer();
+   assert.equal((await call('/api/admin/media/'+photoId+'/image',{method:'PUT',body:{data:'bad'}})).status,401);
+   assert.equal((await call('/api/admin/media/'+photoId+'/image',{method:'PUT',auth:true,body:{data:'bad'}})).status,400);
+   const replaced=await call('/api/admin/media/'+photoId+'/image',{method:'PUT',auth:true,body:{data:'data:image/png;base64,'+image.toString('base64')}});assert.equal(replaced.status,200);
+   const live=await fetch(base+'/media/'+photoId+'.webp',{headers:{'If-None-Match':etag}});assert.equal(live.status,200);assert.notEqual(live.headers.get('etag'),etag);assert.equal((await sharp(Buffer.from(await live.arrayBuffer())).metadata()).width,50);
+   const after=(await call('/api/content')).data;assert.deepEqual(after.slots,content.slots);assert.equal(after.media.find(m=>m.id===photoId).title,metadata.title);assert.equal(after.media.find(m=>m.id===photoId).photoId,metadata.photoId);
+   assert.ok((await call('/')).data.includes('src="/media/'+photoId+'.webp"'));
+   assert.equal((await fetch(base+'/media/'+photoId+'.webp',{headers:{'If-None-Match':live.headers.get('etag')}})).status,304);
+ });
+ await t.test('An older database upgrades additively and retains enquiries, sessions and photos',async()=>{
+   // Reproduce the schema used before this release; a newly started server must migrate it.
+   await store.run('UPDATE enquiries SET consent_at=COALESCE(consent_at,UTC_TIMESTAMP())');
+   await store.pool.query('ALTER TABLE enquiries DROP COLUMN lead_source, DROP COLUMN priority, DROP COLUMN estimated_value, MODIFY consent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP');
+   const second=createStore(env);try{await second.ensure();const rows=await second.listRequests();assert.equal(rows.total,2);assert.equal(rows.items[0].priority,'normaal');assert.equal((await second.content()).slots['hero-main'],photoId);assert.equal((await call('/api/auth/session',{auth:true})).data.authenticated,true);}finally{await second.close();}
+ });
  await t.test('Password can be changed and logout revokes the session',async()=>{
    const next=randomBytes(16).toString('hex');assert.equal((await call('/api/admin/password',{method:'POST',auth:true,body:{current:password,password:next}})).status,200);
    assert.equal((await call('/api/admin/logout',{method:'POST',auth:true})).status,200);

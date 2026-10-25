@@ -26,7 +26,7 @@ export function text(value,max=500,required=false) {
 export const optionalText = (value,max=500)=>text(value??'',max);
 export function passwordValue(value){if(typeof value!=='string'||!value.length||value.length>200)throw new HttpError(400,'Vul uw wachtwoord in.');return value;}
 export const serviceNames={binnen:'Binnen- & kozijnwerk',buiten:'Buitenschilderwerk',latex:'Latex spuiten',stuc:'Stucwerk',behang:'Behangwerk',plinten:'Plinten & afwerking',advies:'Persoonlijk overleg'};
-export const statuses={nieuw:'Nieuw',contact:'Contact opgenomen',gepland:'Ingepland',afgerond:'Afgerond',archief:'Gearchiveerd'};
+export const statuses={nieuw:'Nieuw',contact:'In contact',offerte:'Offerte verstuurd',gepland:'Ingepland',afgerond:'Afgerond',verloren:'Niet doorgegaan',archief:'Gearchiveerd'};
 export function validateRequest(body) {
   if(!body||typeof body!=='object')throw new HttpError(400,'Ongeldige aanvraag.');
   const id=text(body.id,36,true);

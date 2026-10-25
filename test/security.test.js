@@ -15,3 +15,12 @@ test('Server rejects invalid services, consent, color, contacts and oversized da
 test('CSV exports prevent formula execution and escape quotes',()=>{
  assert.equal(csvCell('=1+1'),'"\'=1+1"');assert.equal(csvCell(' hi "there"'),'" hi ""there"""');assert.equal(csvCell('+31612345678'),'"\'+31612345678"');
 });
+
+ test('Manual lead values accept cents safely and reject invalid contacts and fields',async()=>{
+ const {leadDetails,manualLead}=await import('../server/leads.js');
+ for(const amount of [0,19.99,1234.56,'9999999'])assert.equal(leadDetails({estimatedValue:amount}).estimated,Number(amount));
+ for(const amount of [-1,1.234,'NaN',Infinity,10000000])assert.throws(()=>leadDetails({estimatedValue:amount}));
+ assert.equal(leadDetails({estimatedValue:''}).estimated,null);
+ assert.throws(()=>manualLead({name:'Kevin',email:'bad',phone:'0612345678'}));assert.throws(()=>manualLead({name:'Kevin'}));
+ assert.equal(manualLead({name:'Klant',phone:'0612345678'}).source,'telefoon');
+ });

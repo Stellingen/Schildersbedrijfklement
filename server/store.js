@@ -20,6 +20,13 @@ export function createStore(env=process.env) {
     initialising=(async()=>{
       const schema=await readFile(new URL('./schema.sql',import.meta.url),'utf8');
       for(const sql of schema.split(';').map(s=>s.trim()).filter(Boolean))await pool.query(sql);
+      // Additive migration: retain all existing enquiries, photos and accounts.
+      const columns=await all("SELECT COLUMN_NAME,IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='enquiries'");
+      const additions={lead_source:"VARCHAR(20) NOT NULL DEFAULT 'website'",priority:"VARCHAR(10) NOT NULL DEFAULT 'normaal'",estimated_value:'DECIMAL(10,2) NULL'};
+      for(const [name,type] of Object.entries(additions))if(!columns.some(c=>c.COLUMN_NAME===name)){
+        try{await pool.query(`ALTER TABLE enquiries ADD COLUMN ${name} ${type}`);}catch(error){if(error.code!=='ER_DUP_FIELDNAME')throw error;}
+      }
+      if(columns.some(c=>c.COLUMN_NAME==='consent_at'&&c.IS_NULLABLE==='NO'))await pool.query('ALTER TABLE enquiries MODIFY consent_at DATETIME NULL DEFAULT CURRENT_TIMESTAMP');
       // One transaction and a row lock make first-run seeding safe across replicas.
       const cx=await pool.getConnection();
       try{
@@ -63,9 +70,11 @@ export function createStore(env=process.env) {
     const [r]=await all('SELECT * FROM enquiries WHERE id=?',[data.id]);
     return requestRow(r);
   }
-  async function listRequests({q='',status='',page=1,limit=20}={}){
+  async function listRequests({q='',status='',priority='',source='',page=1,limit=20}={}){
     const args=[],where=[];
     if(status){where.push('status=?');args.push(status);}
+    if(priority){where.push('priority=?');args.push(priority);}
+    if(source){where.push('lead_source=?');args.push(source);}
     if(q){where.push('(name LIKE ? OR email LIKE ? OR place LIKE ? OR reference LIKE ?)');args.push(...Array(4).fill('%'+q+'%'));}
     const clause=where.length?' WHERE '+where.join(' AND '):'';
     const [{total}]=await all('SELECT COUNT(*) AS total FROM enquiries'+clause,args);
@@ -80,11 +89,13 @@ export function createStore(env=process.env) {
     const sources=await all('SELECT source,COUNT(*) AS views FROM page_views WHERE day>=? GROUP BY source ORDER BY views DESC LIMIT 6',[since]);
     const devices=await all('SELECT device,COUNT(*) AS views FROM page_views WHERE day>=? GROUP BY device',[since]);
     const requestDays=await all('SELECT CAST(DATE(created_at) AS CHAR) AS day,COUNT(*) AS count FROM enquiries WHERE created_at>=? GROUP BY CAST(DATE(created_at) AS CHAR)',[since]);
-    const [requests]=await all("SELECT COUNT(*) AS total,COALESCE(SUM(status='nieuw'),0) AS fresh,COALESCE(SUM(follow_up<=UTC_DATE() AND status NOT IN ('afgerond','archief')),0) AS followUps FROM enquiries");
+    const [requests]=await all("SELECT COUNT(*) AS total,COALESCE(SUM(status='nieuw'),0) AS fresh,COALESCE(SUM(status NOT IN ('afgerond','archief','verloren')),0) AS active,COALESCE(SUM(follow_up<=UTC_DATE() AND status NOT IN ('afgerond','archief','verloren')),0) AS followUps,COALESCE(SUM(CASE WHEN status NOT IN ('afgerond','archief','verloren') THEN estimated_value ELSE 0 END),0) AS pipelineValue FROM enquiries");
+    const pipeline=await all('SELECT status,COUNT(*) AS count FROM enquiries GROUP BY status');
+    const followUps=await all("SELECT id,reference,name,place,status,priority,CAST(follow_up AS CHAR) AS follow_up FROM enquiries WHERE follow_up IS NOT NULL AND status NOT IN ('afgerond','archief','verloren') ORDER BY follow_up,created_at LIMIT 6");
     const [pictures]=await all('SELECT COUNT(*) AS total,COALESCE(SUM(bytes),0) AS bytes FROM media WHERE deleted_at IS NULL');
     const activity=await all('SELECT action,created_at FROM activity ORDER BY id DESC LIMIT 7');
     const [first]=await all('SELECT MIN(created_at) AS since FROM page_views');
-    return {daily,pages,sources,devices,requestDays,requests,pictures,activity,since:first.since};
+    return {daily,pages,sources,devices,requestDays,requests,pictures,activity,pipeline,followUps,since:first.since};
   }
   async function saveMedia(id,m,placements){
     const cx=await pool.getConnection();

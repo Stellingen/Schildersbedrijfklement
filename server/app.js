@@ -1,3 +1,4 @@
+import {leadSources,priorities,leadDetails,manualLead} from './leads.js';
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,14 @@ const root=fileURLToPath(new URL('../dist/',import.meta.url));
 const publicPaths=new Set(['/','/diensten/','/projecten/','/over-klement/','/kleurstudio/','/werkwijze/','/offerte/','/contact/','/privacy/']);
 const emailLabels={pending:'Wacht op verzending',sending:'Wordt verstuurd',sent:'Verstuurd',failed:'Verzending mislukt',disabled:'E-mail nog niet gekoppeld'};
 const wrap=handler=>(req,res,next)=>Promise.resolve(handler(req,res,next)).catch(next);
+async function processImage(data){
+    const match=/^data:image\/(jpeg|png|webp);base64,([A-Za-z\d+/=]+)$/.exec(data);if(!match)throw new HttpError(400,'Gebruik een JPG-, PNG- of WebP-afbeelding.');
+    const input=Buffer.from(match[2],'base64');if(input.length>6*1024*1024)throw new HttpError(413,'Kies een foto kleiner dan 6 MB.');
+    let output;
+    try{const image=sharp(input,{limitInputPixels:40000000});const metadata=await image.metadata();if(!['jpeg','png','webp'].includes(metadata.format))throw new Error('format');output=await image.rotate().resize({width:2400,height:2400,fit:'inside',withoutEnlargement:true}).webp({quality:85}).toBuffer();}catch{throw new HttpError(400,'Deze afbeelding kan niet worden verwerkt. Kies een andere JPG-, PNG- of WebP-foto.');}
+    if(output.length>6*1024*1024)throw new HttpError(413,'De foto is te groot. Kies een kleinere afbeelding.');
+    return output;
+}
 export function createApp({store,env=process.env}={}){
   const app=express();app.disable('x-powered-by');app.enable('strict routing');app.set('trust proxy',1);
   let transport=null;
@@ -115,18 +124,31 @@ export function createApp({store,env=process.env}={}){
   app.post('/api/admin/logout',wrap(async(req,res)=>{
     await store.run('DELETE FROM sessions WHERE token_hash=?',[req.admin.token_hash]);res.clearCookie('klement_session',{path:'/'});res.json({ok:true});
   }));
-  app.get('/api/admin/system',wrap(async(req,res)=>res.json({database:true,email:!!transport,emailLabels,statuses,slots:slotDefinitions.map(([key,label])=>({key,label})),username:req.admin.username,retentionDays:90})));
+  app.get('/api/admin/system',wrap(async(req,res)=>res.json({database:true,email:!!transport,emailLabels,statuses,leadSources,priorities,slots:slotDefinitions.map(([key,label])=>({key,label})),username:req.admin.username,retentionDays:90})));
   app.get('/api/admin/stats',wrap(async(req,res)=>{
     const days=Number(req.query.days||30);if(![7,30,90].includes(days))throw new HttpError(400,'Ongeldige periode.');res.json(await store.stats(days));
   }));
   app.get('/api/admin/enquiries',wrap(async(req,res)=>{
     const status=String(req.query.status||''),q=String(req.query.q||'').slice(0,120),page=Math.max(1,Math.min(100000,parseInt(req.query.page)||1));
     if(status&&!Object.hasOwn(statuses,status))throw new HttpError(400,'Ongeldige status.');
-    res.json(await store.listRequests({q,status,page}));
+    const priority=String(req.query.priority||''),source=String(req.query.source||'');
+    if((priority&&!Object.hasOwn(priorities,priority))||(source&&!Object.hasOwn(leadSources,source)))throw new HttpError(400,'Ongeldig filter.');
+    res.json(await store.listRequests({q,status,page,priority,source,limit:req.query.view==='board'?100:20}));
+  }));
+  app.post('/api/admin/enquiries',wrap(async(req,res)=>{
+    const d=manualLead(req.body),reference='KL-'+randomUUID().replaceAll('-','').slice(0,10).toUpperCase();
+    await store.run("INSERT INTO enquiries (id,reference,name,email,phone,place,planning,property,description,services,color,consent_at,notes,lead_source,priority,estimated_value,email_status) VALUES (?,?,?,?,?,?,?,?,?,?,NULL,NULL,?,?,?,?, 'disabled')",[d.id,reference,d.name,d.email,d.phone,d.place,d.planning,d.property,d.description,JSON.stringify(d.services),'',d.source,d.priority,d.estimated]);
+    await store.audit('Lead handmatig toegevoegd · '+reference);res.status(201).json({id:d.id,reference});
+  }));
+  app.patch('/api/admin/enquiries/:id/status',wrap(async(req,res)=>{
+    const status=text(req.body.status,20,true);if(!Object.hasOwn(statuses,status))throw new HttpError(400,'Ongeldige status.');
+    const r=await store.run('UPDATE enquiries SET status=?,updated_at=UTC_TIMESTAMP() WHERE id=?',[status,req.params.id]);
+    if(!r.affectedRows)throw new HttpError(404,'Lead niet gevonden.');
+    await store.audit('Leadstatus bijgewerkt · '+statuses[status]);res.json({ok:true});
   }));
   app.get('/api/admin/export',wrap(async(req,res)=>{
     const {items}=await store.listRequests({limit:10000});
-    const rows=[['Referentie','Ontvangen','Status','Naam','E-mail','Telefoon','Plaats','Woningtype','Planning','Diensten','Wensen','3D-keuze','Notities','Opvolgen op'],...items.map(r=>[r.reference,r.created_at?.toISOString?.()||r.created_at,statuses[r.status],r.name,r.email,r.phone,r.place,r.property,r.planning,r.services.map(s=>serviceNames[s]).join(', '),r.description,r.color?.name||'',r.notes,r.follow_up||''])];
+    const rows=[['Referentie','Ontvangen','Status','Naam','E-mail','Telefoon','Plaats','Woningtype','Planning','Diensten','Wensen','3D-keuze','Notities','Opvolgen op','Herkomst','Prioriteit','Geschatte waarde'],...items.map(r=>[r.reference,r.created_at?.toISOString?.()||r.created_at,statuses[r.status],r.name,r.email,r.phone,r.place,r.property,r.planning,r.services.map(s=>serviceNames[s]).join(', '),r.description,r.color?.name||'',r.notes,r.follow_up||'',leadSources[r.lead_source]||r.lead_source,priorities[r.priority]||r.priority,r.estimated_value??''])];
     res.set('Content-Disposition','attachment; filename="klement-aanvragen.csv"').type('text/csv').send('\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\r\n'));
   }));
   app.get('/api/admin/enquiries/:id',wrap(async(req,res)=>{
@@ -135,9 +157,11 @@ export function createApp({store,env=process.env}={}){
   app.patch('/api/admin/enquiries/:id',wrap(async(req,res)=>{
     const [r]=await store.all('SELECT id FROM enquiries WHERE id=?',[req.params.id]);if(!r)throw new HttpError(404,'Aanvraag niet gevonden.');
     const b=req.body,status=text(b.status,20,true);if(!Object.hasOwn(statuses,status))throw new HttpError(400,'Ongeldige status.');
-    const email=text(b.email,120,true);if(!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email))throw new HttpError(400,'Controleer het e-mailadres.');
+    const email=optionalText(b.email,120);if(email&&!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email))throw new HttpError(400,'Controleer het e-mailadres.');
     const follow=optionalText(b.followUp,10);if(follow&&(!/^\d{4}-\d{2}-\d{2}$/.test(follow)||Number.isNaN(Date.parse(follow))||new Date(follow).toISOString().slice(0,10)!==follow))throw new HttpError(400,'Controleer de opvolgdatum.');
-    await store.run('UPDATE enquiries SET status=?,name=?,email=?,phone=?,place=?,notes=?,follow_up=?,updated_at=UTC_TIMESTAMP() WHERE id=?',[status,text(b.name,80,true),email,optionalText(b.phone,24),text(b.place,80,true),optionalText(b.notes,5000),follow||null,req.params.id]);
+    const details=leadDetails(b),phone=optionalText(b.phone,24);
+    if(!email&&!phone)throw new HttpError(400,'Vul een e-mailadres of telefoonnummer in.');
+    await store.run('UPDATE enquiries SET status=?,name=?,email=?,phone=?,place=?,notes=?,follow_up=?,lead_source=?,priority=?,estimated_value=?,updated_at=UTC_TIMESTAMP() WHERE id=?',[status,text(b.name,80,true),email,phone,optionalText(b.place,80),optionalText(b.notes,5000),follow||null,details.source,details.priority,details.estimated,req.params.id]);
     await store.audit('Aanvraag bijgewerkt · '+req.params.id.slice(0,8));res.json({ok:true});
   }));
   app.post('/api/admin/enquiries/:id/notify',wrap(async(req,res)=>{
@@ -161,15 +185,33 @@ export function createApp({store,env=process.env}={}){
   }));
   app.post('/api/admin/media',wrap(async(req,res)=>{
     const title=text(req.body.title,120,true),alt=text(req.body.alt||title,240,true),data=text(req.body.data,8500000,true);
-    const match=/^data:image\/(jpeg|png|webp);base64,([A-Za-z\d+/=]+)$/.exec(data);if(!match)throw new HttpError(400,'Gebruik een JPG-, PNG- of WebP-afbeelding.');
-    const input=Buffer.from(match[2],'base64');if(input.length>6*1024*1024)throw new HttpError(413,'Kies een foto kleiner dan 6 MB.');
-    let output;
-    try{const image=sharp(input,{limitInputPixels:40000000});const metadata=await image.metadata();if(!['jpeg','png','webp'].includes(metadata.format))throw new Error('format');output=await image.rotate().resize({width:2400,height:2400,fit:'inside',withoutEnlargement:true}).webp({quality:85}).toBuffer();}catch{throw new HttpError(400,'Deze afbeelding kan niet worden verwerkt. Kies een andere JPG-, PNG- of WebP-foto.');}
-    if(output.length>6*1024*1024)throw new HttpError(413,'De foto is te groot. Kies een kleinere afbeelding.');
+    const output=await processImage(data);
     const [{total}]=await store.all('SELECT COUNT(*) AS total FROM media');if(total>=500)throw new HttpError(409,'Er zijn al 500 foto’s opgeslagen.');
     const id=randomUUID();
     await store.run('INSERT INTO media (id,photo_id,title,caption,alt,album,src,in_gallery,published,sort_order,image_data,bytes,etag) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',[id,id,title,'',alt,'other','/media/'+id+'.webp',0,0,Number(total),output,output.length,hash(output)]);
     await store.audit('Foto toegevoegd als concept: '+title);res.status(201).json({id});
+  }));
+  app.put('/api/admin/media/:id/image',wrap(async(req,res)=>{
+    const [m]=await store.all('SELECT id FROM media WHERE id=? AND deleted_at IS NULL',[req.params.id]);
+    if(!m)throw new HttpError(404,'Foto niet gevonden.');
+    const output=await processImage(text(req.body.data,8500000,true));
+    await store.run('UPDATE media SET image_data=?,bytes=?,etag=?,src=? WHERE id=?',[output,output.length,hash(output),'/media/'+m.id+'.webp',m.id]);
+    await store.audit('Actieve afbeelding vervangen');res.json({ok:true});
+  }));
+  app.patch('/api/admin/slots/:key',wrap(async(req,res)=>{
+    const key=req.params.key;
+    if(!slotDefinitions.some(([k])=>k===key))throw new HttpError(400,'Onbekende plek op de website.');
+    const id=text(req.body.mediaId,40,true),cx=await store.pool.getConnection();
+    try{
+      await cx.beginTransaction();
+      const [[m]]=await cx.execute('SELECT id FROM media WHERE id=? AND deleted_at IS NULL FOR UPDATE',[id]);
+      if(!m)throw new HttpError(404,'Deze foto is niet beschikbaar.');
+      if(key==='project-dark'||key==='project-white')await cx.execute('UPDATE media SET published=1,in_gallery=1,album=? WHERE id=?',[key==='project-dark'?'dark':'white',id]);
+      else await cx.execute('UPDATE media SET published=1 WHERE id=?',[id]);
+      await cx.execute('INSERT INTO site_slots (slot_key,media_id) VALUES (?,?) ON DUPLICATE KEY UPDATE media_id=VALUES(media_id)',[key,id]);
+      await cx.commit();
+    }catch(error){await cx.rollback();throw error;}finally{cx.release();}
+    await store.audit('Foto geplaatst · '+slotDefinitions.find(([k])=>k===key)[1]);res.json({ok:true});
   }));
   app.patch('/api/admin/media/:id',wrap(async(req,res)=>{
     const b=req.body;
@@ -237,7 +279,7 @@ export function createApp({store,env=process.env}={}){
     if(!store)return;try{
       await store.ensure();await store.cleanup();
       await store.run("UPDATE enquiries SET email_status='failed' WHERE email_status='sending' AND last_email_at<DATE_SUB(UTC_TIMESTAMP(),INTERVAL 10 MINUTE)");
-      if(transport){const pending=await store.all("SELECT id FROM enquiries WHERE email_status IN ('pending','failed','disabled') AND email_attempts<3 AND (last_email_at IS NULL OR last_email_at<DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 MINUTE)) ORDER BY created_at LIMIT 5");for(const r of pending)await notify(r.id);}
+      if(transport){const pending=await store.all("SELECT id FROM enquiries WHERE lead_source='website' AND email_status IN ('pending','failed','disabled') AND email_attempts<3 AND (last_email_at IS NULL OR last_email_at<DATE_SUB(UTC_TIMESTAMP(),INTERVAL 2 MINUTE)) ORDER BY created_at LIMIT 5");for(const r of pending)await notify(r.id);}
     }catch{}
   }
   return {app,startJobs(){void maintain();maintenance=setInterval(()=>void maintain(),60000);maintenance.unref();},stopJobs(){clearInterval(maintenance);transport?.close();},notify};
