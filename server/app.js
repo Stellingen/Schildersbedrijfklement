@@ -187,7 +187,7 @@ export function createApp({store,env=process.env}={}){
       const data=req.query.thumb==='1'?await sharp(m.image_data).resize({width:480,height:360,fit:'inside',withoutEnlargement:true}).webp({quality:75}).toBuffer():m.image_data;
       return res.type('image/webp').send(data);
     }
-    if(!/^\/assets\/[a-z\d-]+\.(?:jpg|svg)$/.test(m.src))throw new HttpError(404,'Foto niet gevonden.');res.sendFile(path.join(root,m.src));
+    if(!/^\/assets\/[a-z\d-]+\.(?:jpg|svg|webp)$/.test(m.src))throw new HttpError(404,'Foto niet gevonden.');res.sendFile(path.join(root,m.src));
   }));
   app.post('/api/admin/media',wrap(async(req,res)=>{
     const title=text(req.body.title,120,true),alt=text(req.body.alt||title,240,true),data=text(req.body.data,8500000,true);

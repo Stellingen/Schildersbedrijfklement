@@ -155,7 +155,7 @@ test('MySQL API integration: protected admin, durable enquiries, statistics and 
  await t.test('An independent brand database never imports legacy customers, accounts, sessions or photos',async()=>{
    const brandName='brand_'+randomBytes(8).toString('hex'),before=await store.listRequests();
    const brand=createStore({...env,BRAND_DATABASE:brandName,BRAND_ADMIN_USERNAME:'NieuwBeheer'});
-   try{await brand.ensure();assert.equal((await brand.listRequests()).total,0);assert.equal((await brand.all('SELECT * FROM sessions')).length,0);assert.equal((await brand.all('SELECT username FROM admins'))[0].username,'NieuwBeheer');assert.equal((await store.listRequests()).total,before.total);const content=await brand.content();assert.ok(content.media.every(m=>m.src.endsWith('.svg')));assert.equal((await brand.all('SELECT value FROM settings WHERE setting_key LIKE ?',['copy:%'])).length,0);}
+   try{await brand.ensure();assert.equal((await brand.listRequests()).total,0);assert.equal((await brand.all('SELECT * FROM sessions')).length,0);assert.equal((await brand.all('SELECT username FROM admins'))[0].username,'NieuwBeheer');assert.equal((await store.listRequests()).total,before.total);const content=await brand.content();assert.ok(content.media.every(m=>/\.(svg|webp)$/.test(m.src)));assert.equal((await brand.all('SELECT value FROM settings WHERE setting_key LIKE ?',['copy:%'])).length,0);}
    finally{await brand.close();await root.query(`DROP DATABASE ${brandName}`);}
  });
  await t.test('Password can be changed and logout revokes the session',async()=>{
