@@ -139,6 +139,19 @@ test('MySQL API integration: protected admin, durable enquiries, statistics and 
    const second=createStore(env);try{await second.ensure();const rows=await second.all('SELECT value FROM settings WHERE setting_key=?',['copy:/:'+id]);assert.equal(rows[0].value,body.value);}finally{await second.close();}
    assert.equal((await call('/api/admin/copy',{method:'PATCH',auth:true,body:{...body,expected:body.value,value:expected}})).status,200);
  });
+ await t.test('Lost leads keep contacts and consent; permanent deletion requires an authenticated CSRF-protected action',async()=>{
+   const path='/api/admin/enquiries/'+enquiry.id;
+   const before=(await call(path,{auth:true})).data;
+   assert.equal((await call(path+'/status',{method:'PATCH',auth:true,body:{status:'verloren'}})).status,200);
+   const kept=(await call(path,{auth:true})).data;assert.equal(kept.status,'verloren');for(const key of ['email','phone','notes','consent_at'])assert.equal(kept[key],before[key]);
+   assert.ok((await call('/api/admin/enquiries?status=verloren',{auth:true})).data.items.some(r=>r.id===enquiry.id));
+   assert.equal((await call(path,{method:'DELETE'})).status,401);
+   assert.equal((await call(path,{method:'DELETE',auth:true,csrfOverride:'wrong'})).status,403);
+   assert.equal((await call(path,{method:'DELETE',auth:true})).status,200);
+   assert.equal((await call(path,{auth:true})).status,404);
+   assert.equal((await store.all('SELECT id FROM enquiries WHERE id=?',[enquiry.id])).length,0);
+   assert.equal((await call(path,{method:'DELETE',auth:true})).status,404);
+ });
  await t.test('Password can be changed and logout revokes the session',async()=>{
    const next=randomBytes(16).toString('hex');assert.equal((await call('/api/admin/password',{method:'POST',auth:true,body:{current:password,password:next}})).status,200);
    assert.equal((await call('/api/admin/logout',{method:'POST',auth:true})).status,200);

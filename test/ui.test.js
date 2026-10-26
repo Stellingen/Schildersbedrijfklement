@@ -19,6 +19,7 @@ function domFixture(authenticated){
   else if(url.startsWith('/api/admin/stats')){const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());value={daily:[{day,visitors:3,views:12}],pages:[],sources:[],devices:[],requestDays:[{day,count:2}],requests:{total:1,fresh:1,followUps:0,pipelineValue:1234.56},pictures:{total:2,bytes:0},pipeline:[{status:'nieuw',count:1}],followUps:[],activity:[],since:null};}
   else if(url==='/api/admin/enquiries'&&options.method==='POST'){value={id:'manual-id'};requests.push({...requests[0],...body,id:'manual-id',lead_source:body.leadSource});status=201;}
   else if(url.startsWith('/api/admin/enquiries?')||url==='/api/admin/enquiries')value={items:requests,total:requests.length};
+  else if(options.method==='DELETE'&&url.startsWith('/api/admin/enquiries/')){const i=requests.findIndex(r=>url.endsWith(r.id));requests.splice(i,1);value={ok:true};}
   else if(url.endsWith('/status')){requests.find(r=>url.includes(r.id)).status=body.status;value={ok:true};}
   else if(url.startsWith('/api/admin/enquiries/'))value=requests.find(r=>url.endsWith(r.id));
   else if(url==='/api/admin/media')value={media,slots};
@@ -64,4 +65,13 @@ test('Inline text editor previews safely, saves the selected text and lets links
  d.querySelector('site-copy').click();assert.ok(d.querySelector('dialog').open);const input=d.querySelector('textarea');input.value='<img src=x onerror=alert(1)>';input.dispatchEvent(new w.Event('input'));assert.equal(d.querySelector('.k-text-preview img'),null);assert.match(d.querySelector('.k-text-preview p').textContent,/<img/);
  d.querySelector('form').dispatchEvent(new w.Event('submit',{cancelable:true}));await pause();assert.equal(calls[0].body.expected,'Welkom');assert.equal(calls[0].body.page,'/');assert.equal(d.querySelector('h1 site-copy').textContent,input.value);assert.equal(d.querySelector('h1 img'),null);assert.equal(d.querySelector('dialog').open,false);
  d.querySelector('#bar [aria-pressed]').click();assert.equal(d.querySelector('site-copy').hasAttribute('role'),false);
+});
+
+test('Lead removal dialog offers a keep option before a separate permanent delete action',async t=>{
+ const f=domFixture(true);t.after(()=>f.dom.window.close());await f.run();const d=f.w.document;
+ d.querySelector('[data-request]').click();await pause();d.querySelector('#delete-lead-open').click();assert.ok(d.querySelector('#delete-lead-dialog').open);
+ assert.equal(f.calls.some(c=>c.options.method==='DELETE'),false);
+ d.querySelector('#keep-lead').click();await pause();assert.equal(f.requests.length,1);assert.equal(f.requests[0].status,'verloren');assert.equal(f.requests[0].phone,'0612345678');
+ d.querySelector('[data-request]').click();await pause();d.querySelector('#delete-lead-open').click();d.querySelector('#delete-lead-confirm').click();await pause();assert.equal(f.requests.length,0);
+ assert.ok(f.calls.some(c=>c.options.method==='DELETE'&&c.options.headers['X-CSRF-Token']==='test-csrf'));
 });

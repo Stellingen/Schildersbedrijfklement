@@ -91,3 +91,7 @@ De versie vóór de dashboardvernieuwing is bewaard op branch `backup/voor-dashb
 ## Teksten direct op de website wijzigen
 
 Open **Website bewerken** na het inloggen. Teksten in de hoofdinhoud zijn subtiel gemarkeerd. Klik op een tekst, pas hem aan en bekijk het live voorbeeld. **Opslaan op website** publiceert direct en bewaart de tekst in MySQL. De bestaande opmaak, afbeeldingen en links blijven behouden. Met **Tekst bewerken: uit** kunt u links normaal gebruiken. Annuleren bewaart niets; de knop voor ongedaan maken herstelt de tekst van vóór de huidige bewerking. Wijzigingen worden per pagina opgeslagen. Automatische galerijteksten en interactieve formulieren blijven via hun eigen beheer werken. Bij een gelijktijdige wijziging wordt opslaan geweigerd: herlaad dan de pagina.
+
+## Leads verwijderen of bewaren
+
+Open een lead en klik **Lead verwijderen**. Kies **Bewaren als niet geworden** om alle contactgegevens, notities en de bestaande contacttoestemming te behouden. Filter op **Niet geworden** om deze leads later terug te vinden. **Definitief verwijderen** wist de lead uit het dashboard en de database; dit is niet herstelbaar. Dit verwijdert geen eventueel eerder verzonden e-mail uit een mailbox. Het aanvraagformulier biedt een optioneel telefoonnummer en vraagt expliciet toestemming voor telefonisch of e-mailcontact over die aanvraag. De datum van die toestemming blijft bij de lead zichtbaar.

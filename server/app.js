@@ -152,6 +152,11 @@ export function createApp({store,env=process.env}={}){
     const rows=[['Referentie','Ontvangen','Status','Naam','E-mail','Telefoon','Plaats','Woningtype','Planning','Diensten','Wensen','3D-keuze','Notities','Opvolgen op','Herkomst','Prioriteit','Geschatte waarde'],...items.map(r=>[r.reference,r.created_at?.toISOString?.()||r.created_at,statuses[r.status],r.name,r.email,r.phone,r.place,r.property,r.planning,r.services.map(s=>serviceNames[s]).join(', '),r.description,r.color?.name||'',r.notes,r.follow_up||'',leadSources[r.lead_source]||r.lead_source,priorities[r.priority]||r.priority,r.estimated_value??''])];
     res.set('Content-Disposition','attachment; filename="klement-aanvragen.csv"').type('text/csv').send('\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\r\n'));
   }));
+  app.delete('/api/admin/enquiries/:id',wrap(async(req,res)=>{
+    const result=await store.run('DELETE FROM enquiries WHERE id=?',[req.params.id]);
+    if(!result.affectedRows)throw new HttpError(404,'Lead niet gevonden.');
+    await store.audit('Lead definitief verwijderd');res.json({ok:true});
+  }));
   app.get('/api/admin/enquiries/:id',wrap(async(req,res)=>{
     const [r]=await store.all('SELECT * FROM enquiries WHERE id=?',[req.params.id]);if(!r)throw new HttpError(404,'Aanvraag niet gevonden.');res.json(requestRow(r));
   }));

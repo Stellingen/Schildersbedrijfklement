@@ -7,7 +7,7 @@ const money=n=>Number(n||0).toLocaleString('nl-NL',{style:'currency',currency:'E
 const date=(v,full=false)=>v?new Date(v).toLocaleString('nl-NL',{day:'numeric',month:'short',...(full?{hour:'2-digit',minute:'2-digit',year:'numeric'}:{})}):'—';
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 const names={binnen:'Binnen- & kozijnwerk',buiten:'Buitenschilderwerk',latex:'Latex spuiten',stuc:'Stucwerk',behang:'Behangwerk',plinten:'Plinten & afwerking',advies:'Persoonlijk overleg'};
-const statusNames={nieuw:'Nieuw',contact:'In contact',offerte:'Offerte verstuurd',gepland:'Ingepland',afgerond:'Afgerond',verloren:'Niet doorgegaan',archief:'Gearchiveerd'};
+const statusNames={nieuw:'Nieuw',contact:'In contact',offerte:'Offerte verstuurd',gepland:'Ingepland',afgerond:'Afgerond',verloren:'Niet geworden',archief:'Gearchiveerd'};
 const sourceNames={website:'Website',telefoon:'Telefoon',email:'E-mail',aanbeveling:'Aanbeveling',anders:'Anders'};
 const pageNames={'/':'Startpagina','/diensten/':'Ons vakwerk','/projecten/':'Projecten','/over-klement/':'Over Klement','/kleurstudio/':'3D-studio','/werkwijze/':'Werkwijze','/offerte/':'Offerte aanvragen','/contact/':'Contact','/privacy/':'Privacy'};
 const viewNames={overzicht:'Overzicht',aanvragen:'Leads & aanvragen',fotos:'Foto’s & plaatsing',instellingen:'Instellingen'};
@@ -121,6 +121,13 @@ async function openRequest(id){
  }catch(err){toast(err.message);}
 }
 $('#request-form').addEventListener('submit',async event=>{event.preventDefault();const f=event.currentTarget,b=f.querySelector('[type=submit]');b.disabled=true;try{await api('/api/admin/enquiries/'+editingRequest.id,{method:'PATCH',body:JSON.stringify(Object.fromEntries(new FormData(f)))});$('#request-dialog').close();toast('Lead bijgewerkt.');await navigate();}catch(err){error($('#request-dialog .dialog-error'),err.message);}finally{b.disabled=false;}});
+$('#delete-lead-open').addEventListener('click',()=>{error($('#delete-lead-error'),'');$('#delete-lead-dialog').showModal();});
+async function finishLead(remove){
+ const id=editingRequest?.id;if(!id)return;const buttons=[...$('#delete-lead-dialog').querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);error($('#delete-lead-error'),'');
+ try{await api('/api/admin/enquiries/'+encodeURIComponent(id)+(remove?'':'/status'),{method:remove?'DELETE':'PATCH',...(!remove?{body:JSON.stringify({status:'verloren'})}:{})});$('#delete-lead-dialog').close();$('#request-dialog').close();editingRequest=null;toast(remove?'Lead definitief verwijderd.':'Lead bewaard als niet geworden. Contactgegevens blijven beschikbaar.');await navigate();}
+ catch(err){error($('#delete-lead-error'),err.message);}finally{buttons.forEach(b=>b.disabled=false);}
+}
+$('#delete-lead-confirm').addEventListener('click',()=>finishLead(true));$('#keep-lead').addEventListener('click',()=>finishLead(false));
 $('#resend-email').addEventListener('click',async()=>{const b=$('#resend-email');b.disabled=true;try{await api('/api/admin/enquiries/'+editingRequest.id+'/notify',{method:'POST'});$('#request-email-status').textContent='De e-mailmelding staat klaar voor verzending.';toast('E-mailmelding opnieuw klaargezet.');}catch(err){error($('#request-dialog .dialog-error'),err.message);}finally{b.disabled=false;}});
 function renderSlots(){
  const group=$('#placement-filter').value;

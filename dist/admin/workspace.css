@@ -39,3 +39,5 @@ html,body{max-width:100%;overflow-x:clip}
  .placement-intro .btn{white-space:normal}.contact-actions .btn{white-space:normal}.pagination{flex-wrap:wrap}
  input,select,textarea{font-size:16px}.search input,.filterbar select,.lead-status-label select{font-size:16px}
 }
+
+#delete-lead-dialog{width:620px}#delete-lead-dialog .dialog-footer{flex-wrap:wrap;justify-content:flex-end}#delete-lead-dialog .btn{white-space:normal}#delete-lead-dialog .detail-body p{overflow-wrap:anywhere}
