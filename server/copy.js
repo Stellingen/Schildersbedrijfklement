@@ -1,9 +1,9 @@
 import {readFile} from 'node:fs/promises';
 import {HttpError,escapeHtml} from './security.js';
 export const copyDefaults=JSON.parse(await readFile(new URL('./copy-defaults.json',import.meta.url),'utf8'));
-export const copyKey=(page,id)=>'copy:'+page+':'+id;
+export const copyKey=(page,id)=>'copy:lijnlaag:'+page+':'+id;
 export async function renderCopy(html,page,store){
- const rows=await store.all("SELECT setting_key,value FROM settings WHERE setting_key LIKE ?",['copy:'+page+':%']);
+ const rows=await store.all("SELECT setting_key,value FROM settings WHERE setting_key LIKE ?",['copy:lijnlaag:'+page+':%']);
  const values=new Map(rows.map(r=>[r.setting_key,r.value]));
  return html.replace(/<site-copy data-copy="([a-f0-9]{16})">([\s\S]*?)<\/site-copy>/g,(_tag,id,original)=>'<site-copy data-copy="'+id+'">'+(values.has(copyKey(page,id))?escapeHtml(values.get(copyKey(page,id))):original)+'</site-copy>');
 }

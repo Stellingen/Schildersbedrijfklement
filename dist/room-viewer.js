@@ -270,7 +270,7 @@ export function createColorRoom(host, initialState) {
     });
     let object = hit?.object, target = null;
     while (object && !target) { target = object.userData.studioPart; object = object.parent; }
-    if (target) document.dispatchEvent(new CustomEvent('klement-surface-pick', { detail: { target } }));
+    if (target) document.dispatchEvent(new CustomEvent('lijnenlaag-surface-pick', { detail: { target } }));
   });
   setView(initialState, true); controls.update(); resize(); update(initialState);
   return { update, orbit, zoom, reset };

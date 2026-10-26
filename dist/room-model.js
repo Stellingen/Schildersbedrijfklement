@@ -5,7 +5,7 @@ import { RoundedBoxGeometry } from './assets/RoundedBoxGeometry.js';
 // Texture creation is injected so the model is also verifiable without a GPU.
 export function createRoomModel(textures = {}) {
   const group = new THREE.Group();
-  group.name = 'Klement colour room';
+  group.name = 'Lijn & Laag colour room';
   const material = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: .85, ...Object.fromEntries(Object.entries(extra).filter(([, value]) => value !== undefined)) });
   const white = material('#f4f2eb');
   const trim = material('#f1f0e9', { roughness: .4 });

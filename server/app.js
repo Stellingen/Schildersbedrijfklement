@@ -11,7 +11,7 @@ import { defaultContent,slotDefinitions } from '../dist/media-defaults.js';
 import { token,hash,fingerprint,hashPassword,verifyPassword,same,HttpError,text,optionalText,validateRequest,serviceNames,statuses,csvCell,escapeHtml,passwordValue } from './security.js';
 import { mediaRow,requestRow } from './store.js';
 const root=fileURLToPath(new URL('../dist/',import.meta.url));
-const publicPaths=new Set(['/','/diensten/','/projecten/','/over-klement/','/kleurstudio/','/werkwijze/','/offerte/','/contact/','/privacy/']);
+const publicPaths=new Set(['/','/diensten/','/projecten/','/over-lijn-en-laag/','/werkgebied/','/kleurstudio/','/werkwijze/','/offerte/','/contact/','/privacy/']);
 const emailLabels={pending:'Wacht op verzending',sending:'Wordt verstuurd',sent:'Verstuurd',failed:'Verzending mislukt',disabled:'E-mail nog niet gekoppeld'};
 const wrap=handler=>(req,res,next)=>Promise.resolve(handler(req,res,next)).catch(next);
 async function processImage(data){
@@ -25,7 +25,7 @@ async function processImage(data){
 export function createApp({store,env=process.env}={}){
   const app=express();app.disable('x-powered-by');app.enable('strict routing');app.set('trust proxy',1);
   let transport=null;
-  if(env.SMTP_HOST&&env.SMTP_USER&&env.SMTP_PASSWORD&&env.SMTP_FROM){
+  if(env.DEMO_MODE==='false'&&env.SMTP_HOST&&env.SMTP_USER&&env.SMTP_PASSWORD&&env.SMTP_FROM){
     const port=Number(env.SMTP_PORT||587);
     transport=nodemailer.createTransport({host:env.SMTP_HOST,port,secure:port===465,requireTLS:port!==465,auth:{user:env.SMTP_USER,pass:env.SMTP_PASSWORD},connectionTimeout:8000,socketTimeout:15000,disableFileAccess:true,disableUrlAccess:true});
   }
@@ -52,12 +52,12 @@ export function createApp({store,env=process.env}={}){
   });
   app.use('/api',express.json({limit:'9mb',strict:true}));
   const database=wrap(async(_req,_res,next)=>{
-    if(!store)throw new HttpError(503,'Het dashboard wordt nog ingesteld. Bel of mail Klement om uw aanvraag door te geven.');
+    if(!store)throw new HttpError(503,'Het dashboard wordt nog ingesteld. Bel of mail Lijn & Laag om uw aanvraag door te geven.');
     await store.ensure();next();
   });
   const requireAuth=wrap(async(req,res,next)=>{
     const cookies=String(req.get('cookie')||'').split(';').map(s=>s.trim());
-    const raw=cookies.find(s=>s.startsWith('klement_session='))?.slice(16)||'';
+    const raw=cookies.find(s=>s.startsWith('lijnenlaag_session='))?.slice('lijnenlaag_session='.length)||'';
     if(!/^[a-f0-9]{64}$/.test(raw))throw new HttpError(401,'Log opnieuw in om verder te gaan.');
     const [session]=await store.all('SELECT * FROM sessions WHERE token_hash=? AND expires_at>UTC_TIMESTAMP()',[hash(raw)]);
     if(!session)throw new HttpError(401,'Uw sessie is verlopen. Log opnieuw in.');
@@ -80,7 +80,7 @@ export function createApp({store,env=process.env}={}){
     if(!store)return res.json({authenticated:false,configured:false});
     try{await store.ensure();}catch{return res.json({authenticated:false,configured:false});}
     const admins=await store.all('SELECT username FROM admins LIMIT 1');
-    const raw=String(req.get('cookie')||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('klement_session='))?.slice(16)||'';
+    const raw=String(req.get('cookie')||'').split(';').map(s=>s.trim()).find(s=>s.startsWith('lijnenlaag_session='))?.slice('lijnenlaag_session='.length)||'';
     const [s]=/^[a-f0-9]{64}$/.test(raw)?await store.all('SELECT username,csrf FROM sessions WHERE token_hash=? AND expires_at>UTC_TIMESTAMP()',[hash(raw)]):[];
     res.json(s?{authenticated:true,configured:true,username:s.username,csrf:s.csrf}:{authenticated:false,configured:!!admins.length});
   }));
@@ -92,8 +92,8 @@ export function createApp({store,env=process.env}={}){
     if(!await verifyPassword(password,admin?.password_hash||fallback))throw new HttpError(401,'Gebruikersnaam of wachtwoord is onjuist.');
     const raw=token(),csrf=token();
     await store.run('INSERT INTO sessions (token_hash,username,csrf,expires_at) VALUES (?,?,?,?)',[hash(raw),admin.username,csrf,new Date(Date.now()+8*3600000)]);
-    res.cookie('klement_session',raw,{httpOnly:true,secure:env.NODE_ENV==='production'||req.secure,sameSite:'strict',path:'/',maxAge:8*3600000});
-    await store.audit('Kevin heeft ingelogd');
+    res.cookie('lijnenlaag_session',raw,{httpOnly:true,secure:env.NODE_ENV==='production'||req.secure,sameSite:'strict',path:'/',maxAge:8*3600000});
+    await store.audit('Beheerder heeft ingelogd');
     res.json({authenticated:true,username:admin.username,csrf});
   }));
   app.post('/api/enquiries',database,wrap(async(req,res)=>{
@@ -123,7 +123,7 @@ export function createApp({store,env=process.env}={}){
   }));
   app.use('/api/admin',database,requireAuth);
   app.post('/api/admin/logout',wrap(async(req,res)=>{
-    await store.run('DELETE FROM sessions WHERE token_hash=?',[req.admin.token_hash]);res.clearCookie('klement_session',{path:'/'});res.json({ok:true});
+    await store.run('DELETE FROM sessions WHERE token_hash=?',[req.admin.token_hash]);res.clearCookie('lijnenlaag_session',{path:'/'});res.json({ok:true});
   }));
   app.get('/api/admin/system',wrap(async(req,res)=>res.json({database:true,email:!!transport,emailLabels,statuses,leadSources,priorities,slots:slotDefinitions.map(([key,label])=>({key,label})),username:req.admin.username,retentionDays:90})));
   app.get('/api/admin/stats',wrap(async(req,res)=>{
@@ -137,7 +137,7 @@ export function createApp({store,env=process.env}={}){
     res.json(await store.listRequests({q,status,page,priority,source,limit:req.query.view==='board'?100:20}));
   }));
   app.post('/api/admin/enquiries',wrap(async(req,res)=>{
-    const d=manualLead(req.body),reference='KL-'+randomUUID().replaceAll('-','').slice(0,10).toUpperCase();
+    const d=manualLead(req.body),reference='LL-'+randomUUID().replaceAll('-','').slice(0,10).toUpperCase();
     await store.run("INSERT INTO enquiries (id,reference,name,email,phone,place,planning,property,description,services,color,consent_at,notes,lead_source,priority,estimated_value,email_status) VALUES (?,?,?,?,?,?,?,?,?,?,NULL,NULL,?,?,?,?, 'disabled')",[d.id,reference,d.name,d.email,d.phone,d.place,d.planning,d.property,d.description,JSON.stringify(d.services),'',d.source,d.priority,d.estimated]);
     await store.audit('Lead handmatig toegevoegd · '+reference);res.status(201).json({id:d.id,reference});
   }));
@@ -150,7 +150,7 @@ export function createApp({store,env=process.env}={}){
   app.get('/api/admin/export',wrap(async(req,res)=>{
     const {items}=await store.listRequests({limit:10000});
     const rows=[['Referentie','Ontvangen','Status','Naam','E-mail','Telefoon','Plaats','Woningtype','Planning','Diensten','Wensen','3D-keuze','Notities','Opvolgen op','Herkomst','Prioriteit','Geschatte waarde'],...items.map(r=>[r.reference,r.created_at?.toISOString?.()||r.created_at,statuses[r.status],r.name,r.email,r.phone,r.place,r.property,r.planning,r.services.map(s=>serviceNames[s]).join(', '),r.description,r.color?.name||'',r.notes,r.follow_up||'',leadSources[r.lead_source]||r.lead_source,priorities[r.priority]||r.priority,r.estimated_value??''])];
-    res.set('Content-Disposition','attachment; filename="klement-aanvragen.csv"').type('text/csv').send('\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\r\n'));
+    res.set('Content-Disposition','attachment; filename="lijnenlaag-aanvragen.csv"').type('text/csv').send('\uFEFF'+rows.map(r=>r.map(csvCell).join(';')).join('\r\n'));
   }));
   app.delete('/api/admin/enquiries/:id',wrap(async(req,res)=>{
     const result=await store.run('DELETE FROM enquiries WHERE id=?',[req.params.id]);
@@ -187,7 +187,7 @@ export function createApp({store,env=process.env}={}){
       const data=req.query.thumb==='1'?await sharp(m.image_data).resize({width:480,height:360,fit:'inside',withoutEnlargement:true}).webp({quality:75}).toBuffer():m.image_data;
       return res.type('image/webp').send(data);
     }
-    if(!/^\/assets\/[a-z\d-]+\.jpg$/.test(m.src))throw new HttpError(404,'Foto niet gevonden.');res.sendFile(path.join(root,m.src));
+    if(!/^\/assets\/[a-z\d-]+\.(?:jpg|svg)$/.test(m.src))throw new HttpError(404,'Foto niet gevonden.');res.sendFile(path.join(root,m.src));
   }));
   app.post('/api/admin/media',wrap(async(req,res)=>{
     const title=text(req.body.title,120,true),alt=text(req.body.alt||title,240,true),data=text(req.body.data,8500000,true);
@@ -264,11 +264,11 @@ export function createApp({store,env=process.env}={}){
     }catch{next();}
   }));
   app.use(express.static(root,{dotfiles:'deny',index:'index.html',maxAge:0,setHeaders(res){res.setHeader('Cache-Control','no-cache');}}));
-  app.use((_req,res)=>res.status(404).type('html').send('<!doctype html><html lang="nl"><meta charset="utf-8"><title>Pagina niet gevonden | Klement</title><h1>Pagina niet gevonden</h1><a href="/">Terug naar de website</a></html>'));
+  app.use((_req,res)=>res.status(404).type('html').send('<!doctype html><html lang="nl"><meta charset="utf-8"><title>Pagina niet gevonden | Lijn & Laag</title><h1>Pagina niet gevonden</h1><a href="/">Terug naar de website</a></html>'));
   app.use((error,req,res,_next)=>{
     const status=error.status|| (error.type==='entity.too.large'?413:500);
     if(status>=500)console.error('Request failed:',error.code||error.name);
-    const message=status===413?'Het bestand is te groot. Kies een foto kleiner dan 6 MB.':status>=500?'Deze actie is tijdelijk niet beschikbaar. Probeer het later opnieuw of neem rechtstreeks contact op met Klement.':error.message||'Controleer de ingevulde gegevens.';
+    const message=status===413?'Het bestand is te groot. Kies een foto kleiner dan 6 MB.':status>=500?'Deze actie is tijdelijk niet beschikbaar. Probeer het later opnieuw of neem rechtstreeks contact op met Lijn & Laag.':error.message||'Controleer de ingevulde gegevens.';
     res.status(status).json({error:message});
   });
   async function notify(id){
@@ -278,8 +278,8 @@ export function createApp({store,env=process.env}={}){
       const result=await store.run("UPDATE enquiries SET email_status='sending',email_attempts=email_attempts+1,last_email_at=UTC_TIMESTAMP() WHERE id=? AND email_status IN ('pending','failed','disabled') AND email_attempts<3",[id]);
       if(!result.affectedRows)return;
       const [raw]=await store.all('SELECT * FROM enquiries WHERE id=?',[id]);const r=requestRow(raw);
-      const body=[`Nieuwe aanvraag ${r.reference}`,`Naam: ${r.name}`,`E-mail: ${r.email}`,`Telefoon: ${r.phone||'Niet opgegeven'}`,`Plaats: ${r.place}`,`Woningtype: ${r.property}`,`Planning: ${r.planning}`,`Diensten: ${r.services.map(k=>serviceNames[k]).join(', ')}`,`Wensen: ${r.description}`,`3D-keuze: ${r.color?.name||'Geen'}`,`Dashboard: ${env.APP_URL||'https://www.schildersbedrijfklement.nl'}/admin/`].join('\n\n');
-      await transport.sendMail({from:env.SMTP_FROM,to:env.NOTIFICATION_EMAIL||'info@schildersbedrijfklement.nl',replyTo:r.email,subject:`Nieuwe offerteaanvraag · ${r.reference}`,text:body});
+      const body=[`Nieuwe aanvraag ${r.reference}`,`Naam: ${r.name}`,`E-mail: ${r.email}`,`Telefoon: ${r.phone||'Niet opgegeven'}`,`Plaats: ${r.place}`,`Woningtype: ${r.property}`,`Planning: ${r.planning}`,`Diensten: ${r.services.map(k=>serviceNames[k]).join(', ')}`,`Wensen: ${r.description}`,`3D-keuze: ${r.color?.name||'Geen'}`,`Dashboard: ${env.APP_URL||'https://lijnenlaag.example'}/admin/`].join('\n\n');
+      await transport.sendMail({from:env.SMTP_FROM,to:env.NOTIFICATION_EMAIL||'info@lijnenlaag.example',replyTo:r.email,subject:`Nieuwe offerteaanvraag · ${r.reference}`,text:body});
       await store.run("UPDATE enquiries SET email_status='sent' WHERE id=?",[id]);
     }catch(e){console.error('Notification delivery:',e.code||'failed');try{await store?.run("UPDATE enquiries SET email_status='failed' WHERE id=?",[id]);}catch{}}
   }

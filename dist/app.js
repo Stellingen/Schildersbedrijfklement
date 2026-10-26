@@ -6,12 +6,12 @@ import { quoteURL, quotePreference } from './quote-link.js?v=paginas-20261025';
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
 const serviceData = {
-  binnen: { name: 'Binnen- & kozijnwerk', image: 'craft.jpg', description: 'Een verzorgd kozijn of een nieuwe kleur geeft uw huis direct een andere uitstraling. We bespreken de ondergrond, de gewenste afwerking en het schilderwerk dat daarbij past.', points: ['Schilderwerk aan kozijnen, binnen en buiten', 'Aandacht voor de voorbereiding en de details', 'Kleur en afwerking samen afstemmen'] },
-  buiten: { name: 'Buitenschilderwerk', image: 'work-1.jpg', description: 'De buitenkant van uw woning verdient aandacht. Met verzorgd schilderwerk krijgt uw huis een frisse uitstraling en helpen we het houtwerk te beschermen tegen weer en wind.', points: ['Kozijnen en ander schilderwerk aan uw woning', 'De staat van de ondergrond vooraf bespreken', 'Een planning passend bij het werk en het weer'] },
-  latex: { name: 'Latex spuiten', image: 'spray.jpg', description: 'Wilt u rustige, gelijkmatig afgewerkte muren en plafonds? Latex spuiten is een mogelijkheid voor een strak geheel. We bekijken samen of de ondergrond en ruimte hiervoor geschikt zijn.', points: ['Voor muren en plafonds', 'Een gelijkmatige afwerking', 'Voorbereiding en afdekwerk meenemen in het voorstel'] },
-  stuc: { name: 'Stucwerk', image: 'plaster.jpg', description: 'Mooi schilderwerk begint bij een goede basis. Met stucwerk maken we wanden klaar voor de volgende stap in de afwerking van uw interieur.', points: ['Een gladde basis voor wanden', 'Afwerking afstemmen op het gewenste resultaat', 'Te combineren met schilderwerk of latex spuiten'] },
-  behang: { name: 'Behangwerk', image: 'wallpaper.jpg', description: 'Van een subtiele structuur tot een wand met karakter: behang maakt een ruimte persoonlijk. We bespreken uw keuze en de voorbereiding die uw wand nodig heeft.', points: ['Behang passend bij uw interieur', 'Aandacht voor de voorbereiding van de wand', 'Zorgvuldige aansluiting en afwerking'] },
-  plinten: { name: 'Plinten & afwerking', image: 'skirting.jpg', description: 'Het zijn de laatste details die een ruimte compleet maken. Met zorgvuldig geplaatste plinten krijgt de overgang tussen vloer en wand een verzorgde afwerking.', points: ['Plinten voor een verzorgde overgang', 'Details en aansluitingen vooraf bespreken', 'Te combineren met uw andere werkzaamheden'] },
+  binnen: { name: 'Binnen- & kozijnwerk', image: 'craft.svg', description: 'Een verzorgd kozijn of een nieuwe kleur geeft uw huis direct een andere uitstraling. We bespreken de ondergrond, de gewenste afwerking en het schilderwerk dat daarbij past.', points: ['Schilderwerk aan kozijnen, binnen en buiten', 'Aandacht voor de voorbereiding en de details', 'Kleur en afwerking samen afstemmen'] },
+  buiten: { name: 'Buitenschilderwerk', image: 'work-1.svg', description: 'De buitenkant van uw woning verdient aandacht. Met verzorgd schilderwerk krijgt uw huis een frisse uitstraling en helpen we het houtwerk te beschermen tegen weer en wind.', points: ['Kozijnen en ander schilderwerk aan uw woning', 'De staat van de ondergrond vooraf bespreken', 'Een planning passend bij het werk en het weer'] },
+  latex: { name: 'Latex spuiten', image: 'spray.svg', description: 'Wilt u rustige, gelijkmatig afgewerkte muren en plafonds? Latex spuiten is een mogelijkheid voor een strak geheel. We bekijken samen of de ondergrond en ruimte hiervoor geschikt zijn.', points: ['Voor muren en plafonds', 'Een gelijkmatige afwerking', 'Voorbereiding en afdekwerk meenemen in het voorstel'] },
+  stuc: { name: 'Stucwerk', image: 'plaster.svg', description: 'Mooi schilderwerk begint bij een goede basis. Met stucwerk maken we wanden klaar voor de volgende stap in de afwerking van uw interieur.', points: ['Een gladde basis voor wanden', 'Afwerking afstemmen op het gewenste resultaat', 'Te combineren met schilderwerk of latex spuiten'] },
+  behang: { name: 'Behangwerk', image: 'wallpaper.svg', description: 'Van een subtiele structuur tot een wand met karakter: behang maakt een ruimte persoonlijk. We bespreken uw keuze en de voorbereiding die uw wand nodig heeft.', points: ['Behang passend bij uw interieur', 'Aandacht voor de voorbereiding van de wand', 'Zorgvuldige aansluiting en afwerking'] },
+  plinten: { name: 'Plinten & afwerking', image: 'skirting.svg', description: 'Het zijn de laatste details die een ruimte compleet maken. Met zorgvuldig geplaatste plinten krijgt de overgang tussen vloer en wand een verzorgde afwerking.', points: ['Plinten voor een verzorgde overgang', 'Details en aansluitingen vooraf bespreken', 'Te combineren met uw andere werkzaamheden'] },
   advies: { name: 'Persoonlijk overleg' }
 };
 
@@ -71,11 +71,11 @@ privacyDialog.setAttribute('aria-label', 'Privacy bij uw aanvraag');
 $$('.privacy-trigger').forEach(button => button.addEventListener('click', () => privacyDialog.showModal()));
 
 // Keep the old one-page bookmarks useful after the move to separate pages.
-const oldSections = { '#diensten':'/diensten/', '#projecten':'/projecten/', '#over':'/over-klement/', '#kleur':'/kleurstudio/', '#werkwijze':'/werkwijze/', '#offerte':'/offerte/', '#contact':'/contact/', '#bedrijfsgegevens':'/contact/#bedrijfsgegevens', '#reviews':'/over-klement/#reviews' };
+const oldSections = { '#diensten':'/diensten/', '#projecten':'/projecten/', '#over':'/over-lijn-en-laag/', '#kleur':'/kleurstudio/', '#werkwijze':'/werkwijze/', '#offerte':'/offerte/', '#contact':'/contact/', '#bedrijfsgegevens':'/contact/#bedrijfsgegevens', '#reviews':'/over-lijn-en-laag/#reviews' };
 if (document.body.dataset.page === 'home' && oldSections[location.hash]) location.replace(oldSections[location.hash]);
 let selectedColor = null;
-document.addEventListener('klement-color-change', event => { selectedColor = { ...event.detail }; });
-document.dispatchEvent(new CustomEvent('klement-color-request'));
+document.addEventListener('lijnenlaag-color-change', event => { selectedColor = { ...event.detail }; });
+document.dispatchEvent(new CustomEvent('lijnenlaag-color-request'));
 let quoteController = null;
 function requestQuote(service, color = null) {
   if (quoteController) quoteController.start(service, color);
@@ -168,7 +168,7 @@ function validateStep() {
     if (!field.checkValidity()) {
       const message = field.name === 'planning' ? 'Kies uw gewenste startperiode; nog in overleg is ook goed.'
         : field.name === 'email' ? 'Vul een geldig e-mailadres in, bijvoorbeeld naam@voorbeeld.nl.'
-        : field.name === 'consent' ? 'Geef aan dat Klement contact met u mag opnemen over uw aanvraag.'
+        : field.name === 'consent' ? 'Geef aan dat Lijn & Laag contact met u mag opnemen over uw aanvraag.'
         : 'Vul dit veld in om verder te gaan.';
       showError(message, field);
       return false;
@@ -194,7 +194,7 @@ function updateSummary() {
     row.append(dt, dd);
     return row;
   }));
-  enquiryText = 'Beste Schildersbedrijf Klement,\n\nIk ontvang graag een vrijblijvende offerte voor de volgende plannen.\n\n' + data.map(([label, content]) => label + ':\n' + content).join('\n\n') + '\n\nIk hoor graag wat de mogelijkheden zijn.\n\nMet vriendelijke groet,\n' + value('name');
+  enquiryText = 'Beste Lijn & Laag,\n\nIk ontvang graag een vrijblijvende offerte voor de volgende plannen.\n\n' + data.map(([label, content]) => label + ':\n' + content).join('\n\n') + '\n\nIk hoor graag wat de mogelijkheden zijn.\n\nMet vriendelijke groet,\n' + value('name');
 }
 form.addEventListener('submit', async event => {
   event.preventDefault();
@@ -217,7 +217,7 @@ form.addEventListener('submit', async event => {
     const result = await response.json();
     if (!response.ok || !result.received) throw new Error(result.error || 'Uw aanvraag kon niet worden opgeslagen.');
     received = true;
-    $('#send-status').textContent = 'Bedankt! Uw aanvraag is ontvangen. Uw referentie is ' + result.reference + '. Klement neemt contact met u op over uw plannen. U hoeft geen e-mailprogramma te openen.';
+    $('#send-status').textContent = 'Bedankt! Uw aanvraag is ontvangen. Uw referentie is ' + result.reference + '. Dit is een conceptaanvraag; automatische e-mailmeldingen staan uit.';
     $('#send-status').hidden = false;
     button.textContent = 'Aanvraag ontvangen ✓';
     previous.hidden = true;
@@ -225,7 +225,7 @@ form.addEventListener('submit', async event => {
     $('.copy-request').hidden = true;
     $('#send-status').scrollIntoView({ behavior: reducedMotion() ? 'instant' : 'smooth', block: 'nearest' });
   } catch (error) {
-    showError((error.message || 'De verbinding is onderbroken.') + ' Uw aanvraag is nog niet bevestigd. Probeer opnieuw, kopieer uw aanvraag of neem rechtstreeks contact op via info@schildersbedrijfklement.nl of +31 6 4368 3995.');
+    showError((error.message || 'De verbinding is onderbroken.') + ' Uw aanvraag is nog niet bevestigd. Probeer opnieuw, kopieer uw aanvraag of neem rechtstreeks contact op via info@lijnenlaag.example.');
     button.disabled = false; button.textContent = 'Opnieuw versturen →';
     previous.disabled = false;
   } finally { sending = false; }
@@ -238,7 +238,7 @@ $('.copy-request').addEventListener('click', async () => {
   const status = $('#send-status');
   try {
     await navigator.clipboard.writeText(enquiryText);
-    status.textContent = 'Aanvraag gekopieerd. Plak deze in een e-mail aan info@schildersbedrijfklement.nl en verstuur hem vanuit uw eigen e-mailprogramma.';
+    status.textContent = 'Aanvraag gekopieerd. Plak deze in een e-mail aan info@lijnenlaag.example en verstuur hem vanuit uw eigen e-mailprogramma.';
   } catch {
     const text = document.createElement('textarea');
     text.value = enquiryText;
@@ -278,7 +278,12 @@ document.querySelector('.privacy-company-link')?.addEventListener('click', () =>
 
 // Activate complex page controls once shared handlers are installed.
 document.body.dataset.appReady = 'true';
-document.dispatchEvent(new CustomEvent('klement-page-ready'));
+document.dispatchEvent(new CustomEvent('lijnenlaag-page-ready'));
 
 // Authenticated owners can edit photos on the actual website. No credentials travel in the URL.
 if(new URLSearchParams(location.search).get('bewerken')==='1') import('./edit-mode.js').catch(()=>{});
+
+// A regional link may prefill only the place, never personal contact information.
+const placeHint=new URLSearchParams(location.search).get("plaats");
+const placeInput=document.querySelector("#quote-form [name=place]")||document.querySelector("[name=place]");
+if(placeInput&&placeHint&&placeHint.length<=80)placeInput.value=placeHint;

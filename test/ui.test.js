@@ -7,14 +7,14 @@ const pickerScript=(await readFile(new URL('../dist/admin/photo-picker.js',impor
 const script=(await readFile(new URL('../dist/admin/admin.js',import.meta.url),'utf8')).replace("import {createPhotoPicker} from './photo-picker.js';",'');
 const pause=()=>new Promise(resolve=>setTimeout(resolve,25));
 function domFixture(authenticated){
- const dom=new JSDOM(html,{url:'https://www.schildersbedrijfklement.nl/admin/',runScripts:'outside-only'}),w=dom.window;
+ const dom=new JSDOM(html,{url:'https://lijnenlaag.example/admin/',runScripts:'outside-only'}),w=dom.window;
  w.setInterval=()=>0;w.HTMLElement.prototype.scrollIntoView=()=>{};
  w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};w.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open');};
  const requests=[{id:'test-id',reference:'KL-TEST',name:'Testklant <img src=x onerror=alert(1)>',email:'test@example.com',phone:'0612345678',place:'Enschede',services:['stuc'],property:'Een huurwoning',planning:'Later / nog in overleg',description:'Plafond',color:{name:'Plafond fijn',value:'#ffffff'},consent_at:'2026-10-25T12:00:00Z',created_at:'2026-10-25T12:00:00Z',status:'nieuw',notes:'',email_status:'disabled',lead_source:'website',priority:'hoog',estimated_value:'1234.56'}];
- const media=[{id:'photo-1',photoId:'photo-1',title:'Testproject',caption:'Bijschrift',alt:'Schilderwerk',published:true,gallery:true,sort:0,album:'dark',src:'/assets/work-1.jpg',bytes:10000,deletedAt:null},{id:'photo-2',title:'Nieuwe foto',caption:'',alt:'Nieuw werk',published:false,gallery:false,sort:1,album:'other',bytes:100,deletedAt:null}],slots={'hero-main':'photo-1','hero-detail':null},calls=[];
+ const media=[{id:'photo-1',photoId:'photo-1',title:'Testproject',caption:'Bijschrift',alt:'Schilderwerk',published:true,gallery:true,sort:0,album:'dark',src:'/assets/work-1.svg',bytes:10000,deletedAt:null},{id:'photo-2',title:'Nieuwe foto',caption:'',alt:'Nieuw werk',published:false,gallery:false,sort:1,album:'other',bytes:100,deletedAt:null}],slots={'hero-main':'photo-1','hero-detail':null},calls=[];
  w.fetch=async(url,options={})=>{
   calls.push({url,options});let value={},status=200;const body=options.body?JSON.parse(options.body):{};
-  if(url==='/api/auth/session')value={authenticated,configured:true,username:'Kevin',csrf:'test-csrf'};
+  if(url==='/api/auth/session')value={authenticated,configured:true,username:'Beheer',csrf:'test-csrf'};
   else if(url==='/api/admin/system')value={database:true,email:false,emailLabels:{disabled:'Nog niet gekoppeld'},slots:[{key:'hero-main',label:'Startpagina · grote foto'},{key:'hero-detail',label:'Startpagina · kleine foto'}]};
   else if(url.startsWith('/api/admin/stats')){const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Amsterdam',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());value={daily:[{day,visitors:3,views:12}],pages:[],sources:[],devices:[],requestDays:[{day,count:2}],requests:{total:1,fresh:1,followUps:0,pipelineValue:1234.56},pictures:{total:2,bytes:0},pipeline:[{status:'nieuw',count:1}],followUps:[],activity:[],since:null};}
   else if(url==='/api/admin/enquiries'&&options.method==='POST'){value={id:'manual-id'};requests.push({...requests[0],...body,id:'manual-id',lead_source:body.leadSource});status=201;}
@@ -58,7 +58,7 @@ test('Unauthenticated dashboard shows login and supports password visibility',as
 });
 
 test('Inline text editor previews safely, saves the selected text and lets links work when disabled',async t=>{
- const dom=new JSDOM('<main><h1><site-copy data-copy="abc">Welkom</site-copy></h1><a href="/contact/"><site-copy data-copy="def">Contact</site-copy></a></main><div id="bar"><button>Klaar</button></div>',{url:'https://www.schildersbedrijfklement.nl/',runScripts:'outside-only'});t.after(()=>dom.window.close());const w=dom.window,d=w.document;
+ const dom=new JSDOM('<main><h1><site-copy data-copy="abc">Welkom</site-copy></h1><a href="/contact/"><site-copy data-copy="def">Contact</site-copy></a></main><div id="bar"><button>Klaar</button></div>',{url:'https://lijnenlaag.example/',runScripts:'outside-only'});t.after(()=>dom.window.close());const w=dom.window,d=w.document;
  w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};w.HTMLDialogElement.prototype.close=function(){this.removeAttribute('open');};
  const source=(await readFile(new URL('../dist/text-editor.js',import.meta.url),'utf8')).replace('export function','function');const calls=[];w.testApi=async(url,options)=>{calls.push({url,body:JSON.parse(options.body)});return {value:JSON.parse(options.body).value};};
  w.eval(source+';enableTextEditing({api:window.testApi,bar:document.querySelector("#bar")});');

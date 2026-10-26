@@ -1,4 +1,4 @@
-/* Klement / Future craft. A separate skin keeps the previous design recoverable. */
+/* Lijn & Laag / Future craft. A separate skin keeps the previous design recoverable. */
 :root{--navy:#101e30;--ink:#152c40;--muted:#536777;--line:#dce5eb;--wash:#f3f6f8;--pale:#edf4fa;--blue-deep:#14588f;--glow:#94d2ff}
 body{font-size:17px;background:#fff;color:var(--ink)}
 .container{width:min(1320px,calc(100% - 88px))}.section{padding:106px 0}h2{font-size:clamp(35px,3.8vw,54px);letter-spacing:-.055em;line-height:1.12}h3{line-height:1.35}

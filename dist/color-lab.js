@@ -14,9 +14,9 @@ const rgbInputs = ['#rgb-red', '#rgb-green', '#rgb-blue'].map(selector => docume
 
 function paintLabel(paint) { return paint.code + ' · ' + paint.name; }
 function announceColor() {
-  document.dispatchEvent(new CustomEvent('klement-color-change', { detail: studioChoice(state) }));
+  document.dispatchEvent(new CustomEvent('lijnenlaag-color-change', { detail: studioChoice(state) }));
 }
-document.addEventListener('klement-color-request', announceColor);
+document.addEventListener('lijnenlaag-color-request', announceColor);
 function populateFields() {
   input.value = state.paint.source ? state.paint.code : '';
   document.querySelector('#hex-code').value = state.paint.hex;
@@ -184,7 +184,7 @@ function unavailable() {
   document.querySelectorAll('[data-wall], [data-light], [data-finish], [data-view], [data-compare], #compare-range').forEach(button => { button.disabled = true; });
   document.querySelector('.comparison-badges').hidden = true; document.querySelector('#comparison-divider').hidden = true;
 }
-document.addEventListener('klement-surface-pick', event => {
+document.addEventListener('lijnenlaag-surface-pick', event => {
   const { target } = event.detail;
   if (target === 'frames') changeTarget('scene', 'frames');
   else if (target === 'ceiling') { changeTarget('scene', 'plaster'); changeTarget('surface', 'ceiling'); }
@@ -221,5 +221,5 @@ switchMode('ral'); applyPaint(state.paint); updateStudioLabels(); setComparison(
 
 const setup = document.querySelector('#studio-setup');
 function enableStudio() { if (setup && document.body.dataset.appReady === 'true') setup.disabled = false; }
-document.addEventListener('klement-page-ready', enableStudio);
+document.addEventListener('lijnenlaag-page-ready', enableStudio);
 enableStudio();

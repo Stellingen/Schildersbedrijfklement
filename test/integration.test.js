@@ -7,18 +7,18 @@ import {createStore} from '../server/store.js';
 import {createApp} from '../server/app.js';
 
 test('MySQL API integration: protected admin, durable enquiries, statistics and photo lifecycle',{skip:!process.env.TEST_MYSQL_URL},async t=>{
- const dbName='klement_test_'+randomBytes(8).toString('hex');
+ const dbName='lijnenlaag_test_'+randomBytes(8).toString('hex');
  const root=await mysql.createConnection(process.env.TEST_MYSQL_URL);
  await root.query(`CREATE DATABASE ${dbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
  const url=new URL(process.env.TEST_MYSQL_URL);url.pathname='/'+dbName;
  const password=randomBytes(16).toString('hex');
- const env={MYSQL_URL:url.toString(),ADMIN_USERNAME:'Kevin',ADMIN_PASSWORD:password,APP_URL:'http://localhost',NODE_ENV:'test'};
+ const env={MYSQL_URL:url.toString(),BRAND_ADMIN_USERNAME:'Beheer',BRAND_ADMIN_PASSWORD:password,APP_URL:'http://localhost',NODE_ENV:'test'};
  const store=createStore(env);let server,backend;
  t.after(async()=>{backend?.stopJobs();if(server)await new Promise(resolve=>server.close(resolve));await store.close();await root.query(`DROP DATABASE ${dbName}`);await root.end();});
  await store.ensure();backend=createApp({store,env});server=backend.app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
  const base='http://127.0.0.1:'+server.address().port;let cookie='',csrf='';
  async function call(route,{method='GET',body,auth=false,origin='http://localhost',csrfOverride}={}){
-   const response=await fetch(base+route,{method,headers:{...(method!=='GET'?{Origin:origin,'Content-Type':'application/json'}:{}),...(auth?{Cookie:cookie,'X-CSRF-Token':csrfOverride??csrf}:{}),'User-Agent':'KlementIntegrationTest',...(body?.dnt?{DNT:'1'}:{})},...(body?{body:JSON.stringify(body)}:{})});
+   const response=await fetch(base+route,{method,headers:{...(method!=='GET'?{Origin:origin,'Content-Type':'application/json'}:{}),...(auth?{Cookie:cookie,'X-CSRF-Token':csrfOverride??csrf}:{}),'User-Agent':'Lijn & LaagIntegrationTest',...(body?.dnt?{DNT:'1'}:{})},...(body?{body:JSON.stringify(body)}:{})});
    return {response,status:response.status,data:response.headers.get('content-type')?.includes('application/json')?await response.json():await response.text()};
  }
  await t.test('Public site remains reachable; internal files and customer data are protected',async()=>{
@@ -27,9 +27,9 @@ test('MySQL API integration: protected admin, durable enquiries, statistics and 
    assert.equal((await call('/api/admin/enquiries')).status,401);assert.equal((await call('/api/admin/export')).status,401);
  });
  await t.test('Login rejects forged origins and passwords, sets secure session properties',async()=>{
-   assert.equal((await call('/api/auth/login',{method:'POST',body:{username:'Kevin',password},origin:'https://attacker.invalid'})).status,403);
-   assert.equal((await call('/api/auth/login',{method:'POST',body:{username:'Kevin',password:'incorrect'}})).status,401);
-   const login=await call('/api/auth/login',{method:'POST',body:{username:'Kevin',password}});assert.equal(login.status,200);csrf=login.data.csrf;
+   assert.equal((await call('/api/auth/login',{method:'POST',body:{username:'Beheer',password},origin:'https://attacker.invalid'})).status,403);
+   assert.equal((await call('/api/auth/login',{method:'POST',body:{username:'Beheer',password:'incorrect'}})).status,401);
+   const login=await call('/api/auth/login',{method:'POST',body:{username:'Beheer',password}});assert.equal(login.status,200);csrf=login.data.csrf;
    const header=login.response.headers.get('set-cookie');assert.match(header,/HttpOnly/);assert.match(header,/SameSite=Strict/);cookie=header.split(';')[0];
    assert.equal((await call('/api/admin/system',{auth:true})).data.database,true);
    assert.equal((await call('/api/admin/logout',{method:'POST',auth:true,csrfOverride:'wrong'})).status,403);
@@ -136,7 +136,7 @@ test('MySQL API integration: protected admin, durable enquiries, statistics and 
    assert.equal((await call('/api/admin/copy',{method:'PATCH',auth:true,body})).status,200);
    const page=await call('/');assert.ok(page.data.includes('Nieuwe tekst &lt;script&gt;alert(1)&lt;/script&gt;'));assert.ok(!page.data.includes('<script>alert(1)</script>'));
    assert.equal((await call('/api/admin/copy',{method:'PATCH',auth:true,body})).status,409);
-   const second=createStore(env);try{await second.ensure();const rows=await second.all('SELECT value FROM settings WHERE setting_key=?',['copy:/:'+id]);assert.equal(rows[0].value,body.value);}finally{await second.close();}
+   const second=createStore(env);try{await second.ensure();const rows=await second.all('SELECT value FROM settings WHERE setting_key=?',['copy:lijnlaag:/:'+id]);assert.equal(rows[0].value,body.value);}finally{await second.close();}
    assert.equal((await call('/api/admin/copy',{method:'PATCH',auth:true,body:{...body,expected:body.value,value:expected}})).status,200);
  });
  await t.test('Lost leads keep contacts and consent; permanent deletion requires an authenticated CSRF-protected action',async()=>{
@@ -152,11 +152,17 @@ test('MySQL API integration: protected admin, durable enquiries, statistics and 
    assert.equal((await store.all('SELECT id FROM enquiries WHERE id=?',[enquiry.id])).length,0);
    assert.equal((await call(path,{method:'DELETE',auth:true})).status,404);
  });
+ await t.test('An independent brand database never imports legacy customers, accounts, sessions or photos',async()=>{
+   const brandName='brand_'+randomBytes(8).toString('hex'),before=await store.listRequests();
+   const brand=createStore({...env,BRAND_DATABASE:brandName,BRAND_ADMIN_USERNAME:'NieuwBeheer'});
+   try{await brand.ensure();assert.equal((await brand.listRequests()).total,0);assert.equal((await brand.all('SELECT * FROM sessions')).length,0);assert.equal((await brand.all('SELECT username FROM admins'))[0].username,'NieuwBeheer');assert.equal((await store.listRequests()).total,before.total);const content=await brand.content();assert.ok(content.media.every(m=>m.src.endsWith('.svg')));assert.equal((await brand.all('SELECT value FROM settings WHERE setting_key LIKE ?',['copy:%'])).length,0);}
+   finally{await brand.close();await root.query(`DROP DATABASE ${brandName}`);}
+ });
  await t.test('Password can be changed and logout revokes the session',async()=>{
    const next=randomBytes(16).toString('hex');assert.equal((await call('/api/admin/password',{method:'POST',auth:true,body:{current:password,password:next}})).status,200);
    assert.equal((await call('/api/admin/logout',{method:'POST',auth:true})).status,200);
    assert.equal((await call('/api/admin/enquiries',{auth:true})).status,401);
-   assert.equal((await call('/api/auth/login',{method:'POST',body:{username:'Kevin',password}})).status,401);
-   assert.equal((await call('/api/auth/login',{method:'POST',body:{username:'Kevin',password:next}})).status,200);
+   assert.equal((await call('/api/auth/login',{method:'POST',body:{username:'Beheer',password}})).status,401);
+   assert.equal((await call('/api/auth/login',{method:'POST',body:{username:'Beheer',password:next}})).status,200);
  });
 });

@@ -9,6 +9,10 @@ export function requestRow(r){return {...r,services:decode(r.services),color:r.c
 export function createStore(env=process.env) {
   if(!env.MYSQL_URL&&!env.MYSQLHOST)return null;
   const options=env.MYSQL_URL ? {uri:env.MYSQL_URL} : {host:env.MYSQLHOST,port:Number(env.MYSQLPORT||3306),user:env.MYSQLUSER,password:env.MYSQLPASSWORD,database:env.MYSQLDATABASE};
+  const originalOptions={...options},brandDatabase=env.BRAND_DATABASE||(env.NODE_ENV==='test'?'':'lijnenlaag');
+  if(brandDatabase&&!/^[a-z][a-z0-9_]{0,47}$/.test(brandDatabase))throw new Error('INVALID_BRAND_DATABASE');
+  if(brandDatabase){if(options.uri){const url=new URL(options.uri);url.pathname='/'+brandDatabase;options.uri=url.toString();}else options.database=brandDatabase;}
+  let namespaceReady=!brandDatabase;
   const pool=mysql.createPool({...options,connectionLimit:5,queueLimit:30,connectTimeout:8000,charset:'utf8mb4',timezone:'Z',...(env.MYSQL_SSL==='true'?{ssl:{rejectUnauthorized:true}}:{})});
   let ready=false,initialising=null,retryAt=0,secret='';
   const all=async(sql,args=[]) => (await pool.execute(sql,args))[0];
@@ -18,6 +22,7 @@ export function createStore(env=process.env) {
     if(initialising)return initialising;
     if(Date.now()<retryAt)throw new HttpError(503,'De verbinding is tijdelijk niet beschikbaar. Probeer het zo opnieuw.');
     initialising=(async()=>{
+      if(!namespaceReady){const bootstrap=await mysql.createConnection(originalOptions);try{await bootstrap.query('CREATE DATABASE IF NOT EXISTS `'+brandDatabase+'` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');namespaceReady=true;}finally{await bootstrap.end();}}
       const schema=await readFile(new URL('./schema.sql',import.meta.url),'utf8');
       for(const sql of schema.split(';').map(s=>s.trim()).filter(Boolean))await pool.query(sql);
       // Additive migration: retain all existing enquiries, photos and accounts.
@@ -42,10 +47,10 @@ export function createStore(env=process.env) {
       }catch(e){await cx.rollback();throw e;}finally{cx.release();}
       await run("INSERT IGNORE INTO settings (setting_key,value) VALUES ('stats_secret',?)",[token()]);
       secret=(await all("SELECT value FROM settings WHERE setting_key='stats_secret'"))[0].value;
-      const username=String(env.ADMIN_USERNAME||'Kevin').trim();
-      if(env.ADMIN_PASSWORD && !(await all('SELECT username FROM admins WHERE username=?',[username])).length){
-        if(env.ADMIN_PASSWORD.length<8||env.ADMIN_PASSWORD.length>200)throw new Error('ADMIN_PASSWORD_LENGTH');
-        await run('INSERT IGNORE INTO admins (username,password_hash) VALUES (?,?)',[username,await hashPassword(env.ADMIN_PASSWORD)]);
+      const username=String(env.BRAND_ADMIN_USERNAME||'Beheer').trim();
+      if(env.BRAND_ADMIN_PASSWORD && !(await all('SELECT username FROM admins WHERE username=?',[username])).length){
+        if(env.BRAND_ADMIN_PASSWORD.length<8||env.BRAND_ADMIN_PASSWORD.length>200)throw new Error('BRAND_ADMIN_PASSWORD_LENGTH');
+        await run('INSERT IGNORE INTO admins (username,password_hash) VALUES (?,?)',[username,await hashPassword(env.BRAND_ADMIN_PASSWORD)]);
       }
       ready=true;
     })().catch(e=>{retryAt=Date.now()+10000;console.error('Database initialisation:',e.code||'unavailable');throw new HttpError(503,'De verbinding is tijdelijk niet beschikbaar. Probeer het zo opnieuw.');}).finally(()=>{initialising=null;});
@@ -65,7 +70,7 @@ export function createStore(env=process.env) {
     return {media,slots};
   }
   async function addRequest(data){
-    const reference='KL-'+randomBytes(5).toString('hex').toUpperCase();
+    const reference='LL-'+randomBytes(5).toString('hex').toUpperCase();
     await run('INSERT IGNORE INTO enquiries (id,reference,name,email,phone,place,planning,property,description,services,color,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',[data.id,reference,data.name,data.email,data.phone,data.place,data.planning,data.property,data.description,JSON.stringify(data.services),data.color?JSON.stringify(data.color):null,'']);
     const [r]=await all('SELECT * FROM enquiries WHERE id=?',[data.id]);
     return requestRow(r);
